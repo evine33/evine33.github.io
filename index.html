@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Formulario con Dropbox (App Folder)</title>
 </head>
-<body style="background: red;">
+<body style="background: blue;">
   <h2>Formulario de contacto</h2>
 
   <button onclick="iniciarSesion()">Iniciar sesión con Dropbox</button>
@@ -56,49 +56,26 @@
     }
 
     async function guardarFormulario(event) {
-      event.preventDefault();
+  event.preventDefault();
+  if (!dbx) {
+    alert("Primero inicia sesión con Dropbox.");
+    return;
+  }
 
-      if (!dbx) {
-        alert("Primero inicia sesión con Dropbox.");
-        return;
-      }
+  try {
+    const respuesta = await dbx.filesUpload({
+      path: '/prueba.txt',
+      contents: "¡Hola desde Dropbox!",
+      mode: { '.tag': 'overwrite' }
+    });
+    console.log("Subida exitosa:", respuesta);
+    alert("Archivo de prueba guardado.");
+  } catch (error) {
+    alert("Error al subir archivo de prueba.",error);
+    console.error("Error al subir prueba:", error);
+  }
+}
 
-      const nombre = document.getElementById("nombre").value.trim();
-      const correo = document.getElementById("correo").value.trim();
-      const mensaje = document.getElementById("mensaje").value.trim();
-
-      if (!nombre || !correo || !mensaje) {
-        alert("Completa todos los campos.");
-        return;
-      }
-
-      const nuevoRegistro = {
-        nombre,
-        correo,
-        mensaje,
-        fecha: new Date().toISOString()
-      };
-
-      registros.push(nuevoRegistro);
-
-      const contenido = JSON.stringify(registros, null, 2);
-      console.log("Contenido que se subirá:", contenido);
-
-      try {
-        const respuesta = await dbx.filesUpload({
-          path: '/registros.json',
-          contents: contenido,
-          mode: { '.tag': 'overwrite' }
-        });
-        console.log("Archivo guardado:", respuesta);
-        alert("Formulario guardado en Dropbox.");
-        document.querySelector('form').reset();
-        mostrarRegistros();
-      } catch (error) {
-        alert("Error al guardar en Dropbox. Revisa la consola.");
-        console.error("Error al subir a Dropbox:", error);
-      }
-    }
 
     function mostrarRegistros() {
       const lista = document.getElementById("lista");
