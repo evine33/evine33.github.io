@@ -2,9 +2,9 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Formulario con Dropbox</title>
+  <title>Formulario con Dropbox (App Folder)</title>
 </head>
-<body>
+<body style="background: red;">
   <h2>Formulario de contacto</h2>
 
   <button onclick="iniciarSesion()">Iniciar sesión con Dropbox</button>
@@ -21,95 +21,94 @@
   <ul id="lista"></ul>
 
   <script src="https://unpkg.com/dropbox/dist/Dropbox-sdk.min.js"></script>
-<!-- 👇 HTML igual que antes, solo cambia JS -->
+  <script>
+    const APP_KEY = "k5t6sterc4j91oq"; // ← Reemplaza con tu App Key
+    const REDIRECT_URI = "https://evine33.github.io/"; // ← Reemplaza con tu URL
+    let dbx;
+    let registros = [];
 
-<script>
-  const APP_KEY = "k5t6sterc4j91oq"; // ← Reemplaza con tu App Key
-const REDIRECT_URI = "https://evine33.github.io/"; // ← Reemplaza con tu URL
-  let dbx;
-  let registros = [];
-
-  function iniciarSesion() {
-    const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${APP_KEY}&response_type=token&redirect_uri=${REDIRECT_URI}`;
-    window.location.href = authUrl;
-  }
-
-  window.onload = async function () {
-    const params = new URLSearchParams(window.location.hash.substring(1));
-    const accessToken = params.get('access_token');
-    if (accessToken) {
-      dbx = new Dropbox.Dropbox({ accessToken });
-      alert("¡Conectado a Dropbox!");
-      await cargarRegistros();
-    }
-  }
-
-  async function cargarRegistros() {
-    try {
-      const archivo = await dbx.filesDownload({ path: '/registros.json' });
-      const blob = archivo.result.fileBlob;
-      const texto = await blob.text();
-      registros = JSON.parse(texto);
-      mostrarRegistros();
-    } catch (e) {
-      registros = [];
-      console.log("No hay archivo o no se puede leer:", e);
-    }
-  }
-
-  async function guardarFormulario(event) {
-    event.preventDefault();
-    if (!dbx) {
-      alert("Primero inicia sesión con Dropbox.");
-      return;
+    function iniciarSesion() {
+      const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${APP_KEY}&response_type=token&redirect_uri=${REDIRECT_URI}`;
+      window.location.href = authUrl;
     }
 
-    const nombre = document.getElementById("nombre").value.trim();
-    const correo = document.getElementById("correo").value.trim();
-    const mensaje = document.getElementById("mensaje").value.trim();
-
-    if (!nombre || !correo || !mensaje) {
-      alert("Por favor completa todos los campos.");
-      return;
+    window.onload = async function () {
+      const params = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = params.get('access_token');
+      if (accessToken) {
+        dbx = new Dropbox.Dropbox({ accessToken });
+        console.log("Autenticado correctamente");
+        await cargarRegistros();
+      }
     }
 
-    const nuevoRegistro = {
-      nombre,
-      correo,
-      mensaje,
-      fecha: new Date().toISOString()
-    };
+    async function cargarRegistros() {
+      try {
+        const archivo = await dbx.filesDownload({ path: '/registros.json' });
+        const blob = archivo.result.fileBlob;
+        const texto = await blob.text();
+        registros = JSON.parse(texto);
+        mostrarRegistros();
+      } catch (e) {
+        registros = [];
+        console.warn("No se encontró registros.json o error al leer:", e);
+      }
+    }
 
-    registros.push(nuevoRegistro);
-    const contenido = JSON.stringify(registros, null, 2);
+    async function guardarFormulario(event) {
+      event.preventDefault();
 
-    try {
-      // Subir dentro de la carpeta App Folder (no se necesita más ruta)
-      await dbx.filesUpload({
-        path: '/registros.json',
-        contents: contenido,
-        mode: { '.tag': 'overwrite' }
+      if (!dbx) {
+        alert("Primero inicia sesión con Dropbox.");
+        return;
+      }
+
+      const nombre = document.getElementById("nombre").value.trim();
+      const correo = document.getElementById("correo").value.trim();
+      const mensaje = document.getElementById("mensaje").value.trim();
+
+      if (!nombre || !correo || !mensaje) {
+        alert("Completa todos los campos.");
+        return;
+      }
+
+      const nuevoRegistro = {
+        nombre,
+        correo,
+        mensaje,
+        fecha: new Date().toISOString()
+      };
+
+      registros.push(nuevoRegistro);
+
+      const contenido = JSON.stringify(registros, null, 2);
+      console.log("Contenido que se subirá:", contenido);
+
+      try {
+        const respuesta = await dbx.filesUpload({
+          path: '/registros.json',
+          contents: contenido,
+          mode: { '.tag': 'overwrite' }
+        });
+        console.log("Archivo guardado:", respuesta);
+        alert("Formulario guardado en Dropbox.");
+        document.querySelector('form').reset();
+        mostrarRegistros();
+      } catch (error) {
+        alert("Error al guardar en Dropbox. Revisa la consola.");
+        console.error("Error al subir a Dropbox:", error);
+      }
+    }
+
+    function mostrarRegistros() {
+      const lista = document.getElementById("lista");
+      lista.innerHTML = '';
+      registros.forEach((r, i) => {
+        const li = document.createElement("li");
+        li.textContent = `${i + 1}. ${r.nombre} (${r.correo}): ${r.mensaje}`;
+        lista.appendChild(li);
       });
-
-      alert("Formulario guardado.");
-      document.querySelector('form').reset();
-      mostrarRegistros();
-    } catch (error) {
-      alert("Error al guardar en Dropbox.");
-      console.error(error);
     }
-  }
-
-  function mostrarRegistros() {
-    const lista = document.getElementById("lista");
-    lista.innerHTML = '';
-    registros.forEach((r, i) => {
-      const li = document.createElement("li");
-      li.textContent = `${i + 1}. ${r.nombre} (${r.correo}): ${r.mensaje}`;
-      lista.appendChild(li);
-    });
-  }
-</script>
-
+  </script>
 </body>
 </html>
