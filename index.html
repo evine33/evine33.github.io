@@ -22,8 +22,8 @@
 
   <script src="https://unpkg.com/dropbox/dist/Dropbox-sdk.min.js"></script>
   <script>
-    const APP_KEY = "k5t6sterc4j91oq"; // ← Reemplaza con tu App Key
-    const REDIRECT_URI = "https://evine33.github.io/"; // ← Reemplaza con tu URL
+    const APP_KEY = "k5t6sterc4j91oq"; // Tu App Key
+    const REDIRECT_URI = "https://evine33.github.io/"; // Tu URL en GitHub Pages
     let dbx;
     let registros = [];
 
@@ -37,7 +37,7 @@
       const accessToken = params.get('access_token');
       if (accessToken) {
         dbx = new Dropbox.Dropbox({ accessToken });
-        console.log("Autenticado correctamente");
+        alert("Conectado a Dropbox correctamente.");
         await cargarRegistros();
       }
     }
@@ -51,65 +51,77 @@
         mostrarRegistros();
       } catch (e) {
         registros = [];
-        console.warn("No se encontró registros.json o error al leer:", e);
+        console.warn("Archivo no encontrado o error al leer:", e);
       }
     }
 
     async function guardarFormulario(event) {
-  event.preventDefault();
+      event.preventDefault();
 
-  if (!dbx) {
-    alert("Primero inicia sesión con Dropbox.");
-    return;
-  }
+      if (!dbx) {
+        alert("Primero inicia sesión con Dropbox.");
+        return;
+      }
 
-  const nombre = document.getElementById("nombre").value.trim();
-  const correo = document.getElementById("correo").value.trim();
-  const mensaje = document.getElementById("mensaje").value.trim();
+      // Probar si puedes subir algo simple
+      try {
+        await dbx.filesUpload({
+          path: '/prueba.txt',
+          contents: "Esto es una prueba simple de Dropbox",
+          mode: { '.tag': 'overwrite' }
+        });
+        alert("Archivo de prueba 'prueba.txt' subido correctamente.");
+      } catch (error) {
+        alert("⚠️ ERROR al subir 'prueba.txt':\n" + (error?.error?.error_summary || error.message || JSON.stringify(error)));
+        return;
+      }
 
-  if (!nombre || !correo || !mensaje) {
-    alert("Completa todos los campos.");
-    return;
-  }
+      // Ahora intentar guardar el formulario
+      const nombre = document.getElementById("nombre").value.trim();
+      const correo = document.getElementById("correo").value.trim();
+      const mensaje = document.getElementById("mensaje").value.trim();
 
-  const nuevoRegistro = {
-    nombre,
-    correo,
-    mensaje,
-    fecha: new Date().toISOString()
-  };
+      if (!nombre || !correo || !mensaje) {
+        alert("Por favor completa todos los campos.");
+        return;
+      }
 
-  registros.push(nuevoRegistro);
+      const nuevoRegistro = {
+        nombre,
+        correo,
+        mensaje,
+        fecha: new Date().toISOString()
+      };
 
-  const contenido = JSON.stringify(registros, null, 2);
-  const output = document.createElement("pre");
+      registros.push(nuevoRegistro);
 
-  try {
-    const respuesta = await dbx.filesUpload({
-      path: '/registros.json',
-      contents: contenido,
-      mode: { '.tag': 'overwrite' }
-    });
+      let contenido = '';
+      try {
+        contenido = JSON.stringify(registros, null, 2);
+      } catch (jsonError) {
+        alert("Error al convertir los datos a JSON.");
+        return;
+      }
 
-    alert("Formulario guardado en Dropbox.");
-    document.querySelector('form').reset();
-    mostrarRegistros();
-  } catch (error) {
-    // Mostrar error en pantalla
-    alert("Error al subir a Dropbox:\n" + (error?.error?.error_summary || error.message || JSON.stringify(error)));
-    
-    const errorBox = document.createElement("div");
-    errorBox.style.background = "#fdd";
-    errorBox.style.color = "#900";
-    errorBox.style.padding = "1em";
-    errorBox.style.marginTop = "1em";
-    errorBox.style.border = "1px solid #900";
-    errorBox.textContent = "Error detallado: " + (error?.error?.error_summary || error.message || JSON.stringify(error));
-    document.body.appendChild(errorBox);
-  }
-}
+      if (!contenido || typeof contenido !== 'string') {
+        alert("Contenido no válido para guardar.");
+        return;
+      }
 
+      try {
+        await dbx.filesUpload({
+          path: '/registros.json',
+          contents: contenido,
+          mode: { '.tag': 'overwrite' }
+        });
 
+        alert("✅ Formulario guardado como 'registros.json'.");
+        document.querySelector('form').reset();
+        mostrarRegistros();
+      } catch (error) {
+        alert("🚫 ERROR al guardar el formulario:\n" + (error?.error?.error_summary || error.message || JSON.stringify(error)));
+      }
+    }
 
     function mostrarRegistros() {
       const lista = document.getElementById("lista");
