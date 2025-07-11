@@ -2,30 +2,40 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Formulario con Dropbox (App Folder)</title>
+  <title>Transacciones con Dropbox</title>
 </head>
-<body style="background: gold;">
-  <h2>Formulario de contacto</h2>
+<body style="background: #f8f9fa; font-family: sans-serif;">
+  <h2>Agregar Transacción</h2>
 
   <button onclick="iniciarSesion()">Iniciar sesión con Dropbox</button>
   <br><br>
 
-  <form onsubmit="guardarFormulario(event)">
-    <input id="nombre" placeholder="Nombre" required><br><br>
-    <input id="correo" placeholder="Correo" type="email" required><br><br>
-    <textarea id="mensaje" placeholder="Mensaje" required></textarea><br><br>
-    <button type="submit">Enviar</button>
+  <form onsubmit="agregarTransaccion(event)">
+    <label>Fecha:</label><br>
+    <input id="fecha" type="date" required><br><br>
+
+    <label>Monto (positivo o negativo):</label><br>
+    <input id="monto" type="number" required><br><br>
+
+    <label>Categoría:</label><br>
+    <input id="categoria" required><br><br>
+
+    <label>Cantidad (opcional):</label><br>
+    <input id="cantidad"><br><br>
+
+    <button type="submit">Agregar transacción</button>
   </form>
 
-  <h3>Registros guardados:</h3>
-  <ul id="lista"></ul>
+  <h3>Transacciones guardadas:</h3>
+  <ul id="lista-transacciones"></ul>
 
   <script src="https://unpkg.com/dropbox/dist/Dropbox-sdk.min.js"></script>
   <script>
-    const APP_KEY = "k5t6sterc4j91oq"; // Tu App Key
-    const REDIRECT_URI = "https://evine33.github.io/"; // Tu URL en GitHub Pages
+    const APP_KEY = "k5t6sterc4j91oq";
+    const REDIRECT_URI = "https://evine33.github.io/";
+
     let dbx;
-    let registros = [];
+    let transactions = [];
 
     function iniciarSesion() {
       const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${APP_KEY}&response_type=token&redirect_uri=${REDIRECT_URI}`;
@@ -37,100 +47,71 @@
       const accessToken = params.get('access_token');
       if (accessToken) {
         dbx = new Dropbox.Dropbox({ accessToken });
-        alert("Conectado a Dropbox correctamente.");
-        await cargarRegistros();
+        alert("Conectado correctamente a Dropbox");
+        await cargarTransacciones();
       }
-    }
+    };
 
-    async function cargarRegistros() {
+    async function cargarTransacciones() {
       try {
-        const archivo = await dbx.filesDownload({ path: '/registros.json' });
+        const archivo = await dbx.filesDownload({ path: '/transactions.json' });
         const blob = archivo.result.fileBlob;
         const texto = await blob.text();
-        registros = JSON.parse(texto);
-        mostrarRegistros();
+        const data = JSON.parse(texto);
+        transactions = data.transactions || [];
+        mostrarTransacciones();
       } catch (e) {
-        registros = [];
-        console.warn("Archivo no encontrado o error al leer:", e);
+        transactions = [];
+        console.warn("No se encontró transactions.json o estaba vacío:", e);
       }
     }
 
-    async function guardarFormulario(event) {
-      event.preventDefault();
-
-      if (!dbx) {
-        alert("Primero inicia sesión con Dropbox.");
-        return;
-      }
-
-      // Probar si puedes subir algo simple
-      try {
-        await dbx.filesUpload({
-          path: '/prueba.txt',
-          contents: "Esto es una prueba simple de Dropbox",
-          mode: { '.tag': 'overwrite' }
-        });
-        alert("Archivo de prueba 'prueba.txt' subido correctamente.");
-      } catch (error) {
-        alert("⚠️ ERROR al subir 'prueba.txt':\n" + (error?.error?.error_summary || error.message || JSON.stringify(error)));
-        return;
-      }
-
-      // Ahora intentar guardar el formulario
-      const nombre = document.getElementById("nombre").value.trim();
-      const correo = document.getElementById("correo").value.trim();
-      const mensaje = document.getElementById("mensaje").value.trim();
-
-      if (!nombre || !correo || !mensaje) {
-        alert("Por favor completa todos los campos.");
-        return;
-      }
-
-      const nuevoRegistro = {
-        nombre,
-        correo,
-        mensaje,
-        fecha: new Date().toISOString()
-      };
-
-      registros.push(nuevoRegistro);
-
-      let contenido = '';
-      try {
-        contenido = JSON.stringify(registros, null, 2);
-      } catch (jsonError) {
-        alert("Error al convertir los datos a JSON.");
-        return;
-      }
-
-      if (!contenido || typeof contenido !== 'string') {
-        alert("Contenido no válido para guardar.");
-        return;
-      }
-
-      try {
-        await dbx.filesUpload({
-          path: '/registros.json',
-          contents: contenido,
-          mode: { '.tag': 'overwrite' }
-        });
-
-        alert("✅ Formulario guardado como 'registros.json'.");
-        document.querySelector('form').reset();
-        mostrarRegistros();
-      } catch (error) {
-        alert("🚫 ERROR al guardar el formulario:\n" + (error?.error?.error_summary || error.message || JSON.stringify(error)));
-      }
-    }
-
-    function mostrarRegistros() {
-      const lista = document.getElementById("lista");
+    function mostrarTransacciones() {
+      const lista = document.getElementById("lista-transacciones");
       lista.innerHTML = '';
-      registros.forEach((r, i) => {
+      transactions.forEach((t, i) => {
         const li = document.createElement("li");
-        li.textContent = `${i + 1}. ${r.nombre} (${r.correo}): ${r.mensaje}`;
+        li.textContent = `${t.date} - ${t.amount} (${t.category}) ${t.cantidad || ''}`;
         lista.appendChild(li);
       });
+    }
+
+    async function agregarTransaccion(event) {
+      event.preventDefault();
+
+      const fecha = document.getElementById("fecha").value;
+      const monto = parseFloat(document.getElementById("monto").value);
+      const categoria = document.getElementById("categoria").value.trim();
+      const cantidad = document.getElementById("cantidad").value.trim();
+
+      if (!fecha || isNaN(monto) || !categoria) {
+        alert("Por favor completa los campos obligatorios.");
+        return;
+      }
+
+      const nueva = {
+        id: transactions.length > 0 ? transactions[transactions.length - 1].id + 1 : 1,
+        date: fecha,
+        amount: monto,
+        category: categoria,
+        cantidad: cantidad
+      };
+
+      transactions.push(nueva);
+
+      try {
+        await dbx.filesUpload({
+          path: '/transactions.json',
+          contents: JSON.stringify({ transactions }, null, 2),
+          mode: { '.tag': 'overwrite' }
+        });
+
+        alert("Transacción guardada con éxito.");
+        document.querySelector("form").reset();
+        mostrarTransacciones();
+      } catch (error) {
+        alert("Error al guardar en Dropbox:\n" + (error?.error?.error_summary || error.message));
+      }
     }
   </script>
 </body>
