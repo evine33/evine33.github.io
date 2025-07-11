@@ -2,28 +2,31 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Base de datos Dropbox</title>
+  <title>Formulario con Dropbox</title>
 </head>
 <body>
-  <h2>Base de datos de usuarios (Dropbox)</h2>
+  <h2>Formulario de contacto</h2>
 
   <button onclick="iniciarSesion()">Iniciar sesión con Dropbox</button>
   <br><br>
 
-  <input id="nombre" placeholder="Nombre">
-  <input id="edad" placeholder="Edad" type="number">
-  <button onclick="agregarUsuario()">Agregar usuario</button>
+  <form onsubmit="guardarFormulario(event)">
+    <input id="nombre" placeholder="Nombre" required><br><br>
+    <input id="correo" placeholder="Correo" type="email" required><br><br>
+    <textarea id="mensaje" placeholder="Mensaje" required></textarea><br><br>
+    <button type="submit">Enviar</button>
+  </form>
 
-  <h3>Usuarios guardados:</h3>
+  <h3>Registros guardados:</h3>
   <ul id="lista"></ul>
 
   <script src="https://unpkg.com/dropbox/dist/Dropbox-sdk.min.js"></script>
   <script>
     const APP_KEY = "k5t6sterc4j91oq"; // ← Reemplaza con tu App Key
-    const REDIRECT_URI = "https://evine33.github.io/"; // ← Cámbialo también
+    const REDIRECT_URI = "https://evine33.github.io/"; // ← Reemplaza con tu URL
 
     let dbx;
-    let usuarios = [];
+    let registros = [];
 
     function iniciarSesion() {
       const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${APP_KEY}&response_type=token&redirect_uri=${REDIRECT_URI}`;
@@ -36,60 +39,70 @@
       if (accessToken) {
         dbx = new Dropbox.Dropbox({ accessToken });
         alert("¡Conectado a Dropbox!");
-        await cargarUsuarios();
+        await cargarRegistros();
       }
     }
 
-    async function cargarUsuarios() {
+    async function cargarRegistros() {
       try {
-        const archivo = await dbx.filesDownload({ path: '/usuarios.json' });
+        const archivo = await dbx.filesDownload({ path: '/registros.json' });
         const blob = archivo.result.fileBlob;
         const texto = await blob.text();
-        usuarios = JSON.parse(texto);
-        mostrarUsuarios();
+        registros = JSON.parse(texto);
+        mostrarRegistros();
       } catch (e) {
-        console.log("No hay archivo o hubo error:", e);
-        usuarios = [];
+        registros = [];
+        console.log("No hay archivo todavía o error al leer:", e);
       }
     }
 
-    async function agregarUsuario() {
+    async function guardarFormulario(event) {
+      event.preventDefault();
       if (!dbx) {
         alert("Primero inicia sesión con Dropbox.");
         return;
       }
 
       const nombre = document.getElementById("nombre").value.trim();
-      const edad = document.getElementById("edad").value.trim();
-      if (!nombre || !edad) {
-        alert("Completa los campos.");
+      const correo = document.getElementById("correo").value.trim();
+      const mensaje = document.getElementById("mensaje").value.trim();
+
+      if (!nombre || !correo || !mensaje) {
+        alert("Por favor completa todos los campos.");
         return;
       }
 
-      usuarios.push({ nombre, edad });
+      const nuevoRegistro = {
+        nombre,
+        correo,
+        mensaje,
+        fecha: new Date().toISOString()
+      };
 
-      const contenido = JSON.stringify(usuarios, null, 2);
+      registros.push(nuevoRegistro);
+      const contenido = JSON.stringify(registros, null, 2);
 
       try {
         await dbx.filesUpload({
-          path: '/usuarios.json',
+          path: '/registros.json',
           contents: contenido,
           mode: 'overwrite'
         });
-        alert("Usuario guardado.");
-        mostrarUsuarios();
+        alert("Formulario guardado.");
+        document.querySelector('form').reset();
+        mostrarRegistros();
       } catch (error) {
-        alert("Error al guardar en Dropbox.");
+        alert("Error al guardar.");
         console.error(error);
       }
     }
 
-    function mostrarUsuarios() {
+    function mostrarRegistros() {
       const lista = document.getElementById("lista");
       lista.innerHTML = '';
-      usuarios.forEach((u, i) => {
+      registros.forEach((r, i) => {
         const li = document.createElement("li");
-        li.textContent = `${i + 1}. ${u.nombre}, ${u.edad} años`;
+        li.textContent = `${i + 1}. ${r.nombre} (${r.correo}): ${r.mensaje}`;
         lista.appendChild(li);
       });
     }
