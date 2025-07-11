@@ -1,53 +1,96 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Guardar en Dropbox</title>
+  <meta charset="UTF-8">
+  <title>Base de datos Dropbox</title>
 </head>
 <body>
-  <h2>Guardar datos en Dropbox</h2>
-  <input id="dato" placeholder="Escribe algo">
+  <h2>Base de datos de usuarios (Dropbox)</h2>
+
   <button onclick="iniciarSesion()">Iniciar sesión con Dropbox</button>
-  <button onclick="guardarEnDropbox()">Guardar</button>
+  <br><br>
+
+  <input id="nombre" placeholder="Nombre">
+  <input id="edad" placeholder="Edad" type="number">
+  <button onclick="agregarUsuario()">Agregar usuario</button>
+
+  <h3>Usuarios guardados:</h3>
+  <ul id="lista"></ul>
 
   <script src="https://unpkg.com/dropbox/dist/Dropbox-sdk.min.js"></script>
   <script>
-    const APP_KEY = "mizuaeyfwosrlhx"; // Coloca tu App key aquí
+    const APP_KEY = "k5t6sterc4j91oq"; // ← Reemplaza con tu App Key
+    const REDIRECT_URI = "Eyuma24/eyuma24.githup.io"; // ← Cámbialo también
+
     let dbx;
+    let usuarios = [];
 
     function iniciarSesion() {
-      const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${APP_KEY}&response_type=token&redirect_uri=${location.origin}`;
+      const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${APP_KEY}&response_type=token&redirect_uri=${REDIRECT_URI}`;
       window.location.href = authUrl;
     }
 
-    // Si ya tenemos un access_token (después del login), lo usamos
-    window.onload = function () {
+    window.onload = async function () {
       const params = new URLSearchParams(window.location.hash.substring(1));
       const accessToken = params.get('access_token');
       if (accessToken) {
         dbx = new Dropbox.Dropbox({ accessToken });
         alert("¡Conectado a Dropbox!");
+        await cargarUsuarios();
       }
     }
 
-    function guardarEnDropbox() {
+    async function cargarUsuarios() {
+      try {
+        const archivo = await dbx.filesDownload({ path: '/usuarios.json' });
+        const blob = archivo.result.fileBlob;
+        const texto = await blob.text();
+        usuarios = JSON.parse(texto);
+        mostrarUsuarios();
+      } catch (e) {
+        console.log("No hay archivo o hubo error:", e);
+        usuarios = [];
+      }
+    }
+
+    async function agregarUsuario() {
       if (!dbx) {
         alert("Primero inicia sesión con Dropbox.");
         return;
       }
 
-      const contenido = document.getElementById("dato").value;
-      dbx.filesUpload({
-        path: '/mi_archivo.txt',
-        contents: contenido,
-        mode: 'overwrite'
-      })
-      .then(response => {
-        alert("¡Archivo guardado!");
-        console.log(response);
-      })
-      .catch(error => {
-        alert("Error al guardar");
+      const nombre = document.getElementById("nombre").value.trim();
+      const edad = document.getElementById("edad").value.trim();
+      if (!nombre || !edad) {
+        alert("Completa los campos.");
+        return;
+      }
+
+      usuarios.push({ nombre, edad });
+
+      const contenido = JSON.stringify(usuarios, null, 2);
+
+      try {
+        await dbx.filesUpload({
+          path: '/usuarios.json',
+          contents: contenido,
+          mode: 'overwrite'
+        });
+        alert("Usuario guardado.");
+        mostrarUsuarios();
+      } catch (error) {
+        alert("Error al guardar en Dropbox.");
         console.error(error);
+      }
+    }
+
+    function mostrarUsuarios() {
+      const lista = document.getElementById("lista");
+      lista.innerHTML = '';
+      usuarios.forEach((u, i) => {
+        const li = document.createElement("li");
+        li.textContent = `${i + 1}. ${u.nombre}, ${u.edad} años`;
+        lista.appendChild(li);
       });
     }
   </script>
