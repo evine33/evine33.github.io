@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Formulario con Dropbox (App Folder)</title>
 </head>
-<body style="background: blue;">
+<body style="background: gold;">
   <h2>Formulario de contacto</h2>
 
   <button onclick="iniciarSesion()">Iniciar sesión con Dropbox</button>
@@ -57,24 +57,58 @@
 
     async function guardarFormulario(event) {
   event.preventDefault();
+
   if (!dbx) {
     alert("Primero inicia sesión con Dropbox.");
     return;
   }
 
+  const nombre = document.getElementById("nombre").value.trim();
+  const correo = document.getElementById("correo").value.trim();
+  const mensaje = document.getElementById("mensaje").value.trim();
+
+  if (!nombre || !correo || !mensaje) {
+    alert("Completa todos los campos.");
+    return;
+  }
+
+  const nuevoRegistro = {
+    nombre,
+    correo,
+    mensaje,
+    fecha: new Date().toISOString()
+  };
+
+  registros.push(nuevoRegistro);
+
+  const contenido = JSON.stringify(registros, null, 2);
+  const output = document.createElement("pre");
+
   try {
     const respuesta = await dbx.filesUpload({
-      path: '/prueba.txt',
-      contents: "¡Hola desde Dropbox!",
+      path: '/registros.json',
+      contents: contenido,
       mode: { '.tag': 'overwrite' }
     });
-    console.log("Subida exitosa:", respuesta);
-    alert("Archivo de prueba guardado.");
+
+    alert("Formulario guardado en Dropbox.");
+    document.querySelector('form').reset();
+    mostrarRegistros();
   } catch (error) {
-    alert("Error al subir archivo de prueba.",error);
-    console.error("Error al subir prueba:", error);
+    // Mostrar error en pantalla
+    alert("Error al subir a Dropbox:\n" + (error?.error?.error_summary || error.message || JSON.stringify(error)));
+    
+    const errorBox = document.createElement("div");
+    errorBox.style.background = "#fdd";
+    errorBox.style.color = "#900";
+    errorBox.style.padding = "1em";
+    errorBox.style.marginTop = "1em";
+    errorBox.style.border = "1px solid #900";
+    errorBox.textContent = "Error detallado: " + (error?.error?.error_summary || error.message || JSON.stringify(error));
+    document.body.appendChild(errorBox);
   }
 }
+
 
 
     function mostrarRegistros() {
