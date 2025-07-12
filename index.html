@@ -9,9 +9,9 @@
     input, textarea, button, select { font-size: 1em; padding: 0.4em; margin: 0.4em 0; width: 100%; box-sizing: border-box; }
     ul { list-style: none; padding: 0; }
     li { margin: 1em 0; padding: 1em; background: #fff; border-radius: 8px; box-shadow: 0 0 5px rgba(0,0,0,0.1); position: relative; }
-    .acciones { position: absolute; top: 1em; right: 1em; }
-    .acciones button { margin-left: 0.3em; }
-    img { margin-top: 0.5em; max-width: 100px; border-radius: 5px; }
+    .acciones { margin-top: 0.5em; }
+    .acciones button { margin-right: 0.5em; }
+    img { display: block; margin-top: 0.5em; max-width: 100px; border-radius: 5px; }
     .error { background: #ffe0e0; color: #900; padding: 1em; margin: 1em 0; border: 1px solid #900; }
   </style>
 </head>
@@ -86,11 +86,19 @@
         const li = document.createElement("li");
         li.innerHTML = `<strong>${t.date}</strong> - ${t.amount} (${t.category}) ${t.cantidad || ""}`;
 
-        const acciones = document.createElement("span");
+        const acciones = document.createElement("div");
         acciones.className = "acciones";
-        acciones.innerHTML = `
-          <button onclick="editar(${t.id})">✏️</button>
-          <button onclick="eliminar(${t.id})">🗑️</button>`;
+
+        const editarBtn = document.createElement("button");
+        editarBtn.textContent = "✏️ Editar";
+        editarBtn.onclick = () => editar(t.id);
+
+        const eliminarBtn = document.createElement("button");
+        eliminarBtn.textContent = "🗑️ Eliminar";
+        eliminarBtn.onclick = () => eliminar(t.id);
+
+        acciones.appendChild(editarBtn);
+        acciones.appendChild(eliminarBtn);
         li.appendChild(acciones);
 
         try {
@@ -99,7 +107,9 @@
           const img = document.createElement("img");
           img.src = `data:image/jpeg;base64,${base64}`;
           li.appendChild(img);
-        } catch {}
+        } catch (e) {
+          console.info(`Sin imagen para transacción ${t.id}`);
+        }
 
         lista.appendChild(li);
       });
@@ -152,15 +162,17 @@
               contents: base64,
               mode: { '.tag': 'overwrite' }
             });
+            mostrarTransacciones();
           } catch (err) {
             alert("No se pudo guardar la imagen: " + err.message);
           }
         };
         reader.readAsDataURL(archivo);
+      } else {
+        mostrarTransacciones();
       }
 
       cancelarEdicion();
-      mostrarTransacciones();
     }
 
     async function guardarEnDropbox() {
