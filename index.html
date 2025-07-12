@@ -45,132 +45,135 @@
   <h3>Transacciones:</h3>
   <ul id="lista-transacciones"></ul>
 
-  <script src="https://unpkg.com/dropbox/dist/Dropbox-sdk.min.js"></script>
-  <script>
-    const APP_KEY = "k5t6sterc4j91oq";
-    const REDIRECT_URI = "https://evine33.github.io/";
-    let dbx;
-    let transactions = [];
+ <script src="https://unpkg.com/dropbox/dist/Dropbox-sdk.min.js"></script>
+<script>
+  const APP_KEY = "k5t6sterc4j91oq";
+  const REDIRECT_URI = "https://evine33.github.io/";
+  let dbx;
+  let transactions = [];
 
-    function iniciarSesion() {
-      const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${APP_KEY}&response_type=token&redirect_uri=${REDIRECT_URI}`;
-      window.location.href = authUrl;
+  function iniciarSesion() {
+    const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${APP_KEY}&response_type=token&redirect_uri=${REDIRECT_URI}`;
+    window.location.href = authUrl;
+  }
+
+  window.onload = async function () {
+    const params = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = params.get('access_token');
+    if (accessToken) {
+      dbx = new Dropbox.Dropbox({ accessToken });
+      console.log("✅ Autenticado correctamente.");
+      await cargarTransacciones();
     }
+  };
 
-    window.onload = async function () {
-      const params = new URLSearchParams(window.location.hash.substring(1));
-      const accessToken = params.get('access_token');
-      if (accessToken) {
-        dbx = new Dropbox.Dropbox({ accessToken });
-        await cargarTransacciones();
-      }
-    };
+  async function cargarTransacciones() {
+    try {
+      const archivo = await dbx.filesDownload({ path: '/transactions.json' });
+      const blob = archivo.result.fileBlob;
+      const texto = await blob.text();
+      const data = JSON.parse(texto);
+      transactions = data.transactions || [];
+      mostrarTransacciones();
+    } catch (e) {
+      console.warn("ℹ️ No se pudo cargar transactions.json:", e);
+      transactions = [];
+    }
+  }
 
-    async function cargarTransacciones() {
+  function mostrarTransacciones(filtradas = null) {
+    const lista = document.getElementById("lista-transacciones");
+    lista.innerHTML = '';
+    const datos = filtradas || transactions;
+
+    datos.forEach(async (t) => {
+      const li = document.createElement("li");
+      li.innerHTML = `<strong>${t.date}</strong> - ${t.amount} (${t.category}) ${t.cantidad || ''}`;
+
+      const btns = document.createElement("span");
+      btns.className = "acciones";
+
+      const editar = document.createElement("button");
+      editar.textContent = "✏️";
+      editar.onclick = () => cargarParaEditar(t.id);
+
+      const borrar = document.createElement("button");
+      borrar.textContent = "🗑️";
+      borrar.onclick = () => eliminarTransaccion(t.id);
+
+      btns.appendChild(editar);
+      btns.appendChild(borrar);
+      li.appendChild(btns);
+
+      // Cargar imagen si existe
       try {
-        const archivo = await dbx.filesDownload({ path: '/transactions.json' });
-        const blob = archivo.result.fileBlob;
-        const texto = await blob.text();
-        const data = JSON.parse(texto);
-        transactions = data.transactions || [];
-        mostrarTransacciones();
-      } catch (e) {
-        transactions = [];
-      }
-    }
+        const archivo = await dbx.filesDownload({ path: `/imagenes/tx-${t.id}.txt` });
+        const blob = await archivo.result.fileBlob;
+        const base64 = await blob.text();
 
-    function mostrarTransacciones(filtradas = null) {
-      const lista = document.getElementById("lista-transacciones");
-      lista.innerHTML = '';
-      const datos = filtradas || transactions;
-
-      datos.forEach(async (t) => {
-        const li = document.createElement("li");
-        li.innerHTML = `<strong>${t.date}</strong> - ${t.amount} (${t.category}) ${t.cantidad || ''}`;
-
-        const btns = document.createElement("span");
-        btns.className = "acciones";
-
-        const editar = document.createElement("button");
-        editar.textContent = "✏️";
-        editar.onclick = () => cargarParaEditar(t.id);
-
-        const borrar = document.createElement("button");
-        borrar.textContent = "🗑️";
-        borrar.onclick = () => eliminarTransaccion(t.id);
-
-        btns.appendChild(editar);
-        btns.appendChild(borrar);
-        li.appendChild(btns);
-
-        // Buscar imagen
-        try {
-          const archivo = await dbx.filesDownload({ path: `/imagenes/tx-${t.id}.txt` });
-          const blob = await archivo.result.fileBlob;
-          const base64 = await blob.text();
-
-          const img = document.createElement("img");
-          img.src = `data:image/jpeg;base64,${base64}`;
-          img.width = 120;
-          li.appendChild(img);
-        } catch (e) {
-          // No imagen
-        }
-
-        lista.appendChild(li);
-      });
-    }
-
-    function cargarParaEditar(id) {
-      const t = transactions.find(tx => tx.id === id);
-      if (!t) return;
-
-      document.getElementById("edit-id").value = t.id;
-      document.getElementById("fecha").value = t.date;
-      document.getElementById("monto").value = t.amount;
-      document.getElementById("categoria").value = t.category;
-      document.getElementById("cantidad").value = t.cantidad || '';
-    }
-
-    function cancelarEdicion() {
-      document.getElementById("edit-id").value = '';
-      document.querySelector("form").reset();
-    }
-
-    async function guardarTransaccion(event) {
-      event.preventDefault();
-
-      const id = document.getElementById("edit-id").value;
-      const fecha = document.getElementById("fecha").value;
-      const monto = parseFloat(document.getElementById("monto").value);
-      const categoria = document.getElementById("categoria").value.trim();
-      const cantidad = document.getElementById("cantidad").value.trim();
-      const imagenInput = document.getElementById("imagen");
-
-      if (!fecha || isNaN(monto) || !categoria) {
-        alert("Campos obligatorios incompletos.");
-        return;
+        const img = document.createElement("img");
+        img.src = `data:image/jpeg;base64,${base64}`;
+        img.width = 120;
+        li.appendChild(img);
+      } catch (err) {
+        console.info(`📁 No hay imagen para tx-${t.id}:`, err?.error_summary || err.message);
       }
 
-      let transId;
-      if (id) {
-        const tx = transactions.find(t => t.id == id);
-        if (tx) {
-          tx.date = fecha;
-          tx.amount = monto;
-          tx.category = categoria;
-          tx.cantidad = cantidad;
-          transId = tx.id;
-        }
-      } else {
-        transId = transactions.length > 0 ? transactions[transactions.length - 1].id + 1 : 1;
-        const nueva = { id: transId, date: fecha, amount: monto, category: categoria, cantidad: cantidad };
-        transactions.push(nueva);
-      }
+      lista.appendChild(li);
+    });
+  }
 
+  function cargarParaEditar(id) {
+    const t = transactions.find(tx => tx.id === id);
+    if (!t) return;
+
+    document.getElementById("edit-id").value = t.id;
+    document.getElementById("fecha").value = t.date;
+    document.getElementById("monto").value = t.amount;
+    document.getElementById("categoria").value = t.category;
+    document.getElementById("cantidad").value = t.cantidad || '';
+  }
+
+  function cancelarEdicion() {
+    document.getElementById("edit-id").value = '';
+    document.querySelector("form").reset();
+  }
+
+  async function guardarTransaccion(event) {
+    event.preventDefault();
+
+    const id = document.getElementById("edit-id").value;
+    const fecha = document.getElementById("fecha").value;
+    const monto = parseFloat(document.getElementById("monto").value);
+    const categoria = document.getElementById("categoria").value.trim();
+    const cantidad = document.getElementById("cantidad").value.trim();
+    const imagenInput = document.getElementById("imagen");
+
+    if (!fecha || isNaN(monto) || !categoria) {
+      alert("⚠️ Completa todos los campos obligatorios.");
+      return;
+    }
+
+    let transId;
+    if (id) {
+      const tx = transactions.find(t => t.id == id);
+      if (tx) {
+        tx.date = fecha;
+        tx.amount = monto;
+        tx.category = categoria;
+        tx.cantidad = cantidad;
+        transId = tx.id;
+      }
+    } else {
+      transId = transactions.length > 0 ? transactions[transactions.length - 1].id + 1 : 1;
+      const nueva = { id: transId, date: fecha, amount: monto, category: categoria, cantidad: cantidad };
+      transactions.push(nueva);
+    }
+
+    try {
       await guardarEnDropbox();
 
-      // Imagen
+      // Imagen opcional
       const archivo = imagenInput.files[0];
       if (archivo) {
         const reader = new FileReader();
@@ -182,9 +185,10 @@
               contents: base64,
               mode: { '.tag': 'overwrite' }
             });
+            console.log("📷 Imagen guardada.");
             mostrarTransacciones();
           } catch (err) {
-            alert("No se pudo guardar imagen: " + err.message);
+            alert("❌ Error al subir la imagen: " + (err?.error?.error_summary || err.message));
           }
         };
         reader.readAsDataURL(archivo);
@@ -193,36 +197,45 @@
       }
 
       cancelarEdicion();
+    } catch (error) {
+      alert("❌ Error al guardar transacción:\n" + (error?.error?.error_summary || error.message));
     }
+  }
 
-    async function eliminarTransaccion(id) {
-      if (!confirm("¿Eliminar esta transacción?")) return;
-      transactions = transactions.filter(t => t.id !== id);
+  async function eliminarTransaccion(id) {
+    if (!confirm("¿Eliminar esta transacción?")) return;
+    transactions = transactions.filter(t => t.id !== id);
+    try {
       await guardarEnDropbox();
       mostrarTransacciones();
+    } catch (error) {
+      alert("❌ Error al eliminar: " + (error?.error?.error_summary || error.message));
     }
+  }
 
-    async function guardarEnDropbox() {
-      try {
-        await dbx.filesUpload({
-          path: '/transactions.json',
-          contents: JSON.stringify({ transactions }, null, 2),
-          mode: { '.tag': 'overwrite' }
-        });
-      } catch (error) {
-        alert("Error al guardar en Dropbox:\n" + (error?.error?.error_summary || error.message));
-      }
+  async function guardarEnDropbox() {
+    try {
+      await dbx.filesUpload({
+        path: '/transactions.json',
+        contents: JSON.stringify({ transactions }, null, 2),
+        mode: { '.tag': 'overwrite' }
+      });
+      console.log("✅ Transacciones guardadas correctamente.");
+    } catch (error) {
+      throw new Error("No se pudo guardar en Dropbox: " + (error?.error?.error_summary || error.message));
     }
+  }
 
-    function filtrarTransacciones() {
-      const texto = document.getElementById("buscador").value.toLowerCase();
-      const filtradas = transactions.filter(t =>
-        t.category.toLowerCase().includes(texto) ||
-        t.date.includes(texto) ||
-        (t.cantidad || '').toLowerCase().includes(texto)
-      );
-      mostrarTransacciones(filtradas);
-    }
-  </script>
+  function filtrarTransacciones() {
+    const texto = document.getElementById("buscador").value.toLowerCase();
+    const filtradas = transactions.filter(t =>
+      t.category.toLowerCase().includes(texto) ||
+      t.date.includes(texto) ||
+      (t.cantidad || '').toLowerCase().includes(texto)
+    );
+    mostrarTransacciones(filtradas);
+  }
+</script>
+
 </body>
 </html>
