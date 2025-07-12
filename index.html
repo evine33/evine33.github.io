@@ -2,12 +2,14 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Transacciones con Dropbox</title>
+  <title>Transacciones con imágenes y Dropbox</title>
   <style>
     body { background: #f8f9fa; font-family: sans-serif; padding: 1em; }
     input, textarea, button { font-size: 1em; margin: 0.3em 0; }
     li { margin: 0.5em 0; }
     .acciones button { margin-left: 0.5em; }
+    .search-box { margin-top: 1em; }
+    img { display: block; margin-top: 0.3em; border-radius: 8px; }
   </style>
 </head>
 <body>
@@ -21,18 +23,24 @@
     <label>Fecha:</label><br>
     <input id="fecha" type="date" required><br>
 
-    <label>Monto (positivo o negativo):</label><br>
+    <label>Monto:</label><br>
     <input id="monto" type="number" required><br>
 
     <label>Categoría:</label><br>
     <input id="categoria" required><br>
 
-    <label>Cantidad (opcional):</label><br>
-    <input id="cantidad"><br><br>
+    <label>Cantidad:</label><br>
+    <input id="cantidad"><br>
 
-    <button type="submit">Guardar transacción</button>
+    <label>Imagen (opcional):</label><br>
+    <input id="imagen" type="file" accept="image/*"><br><br>
+
+    <button type="submit">Guardar</button>
     <button type="button" onclick="cancelarEdicion()">Cancelar</button>
   </form>
+
+  <h3>Buscar transacción:</h3>
+  <input class="search-box" id="buscador" placeholder="Filtrar por categoría, fecha, cantidad..." oninput="filtrarTransacciones()">
 
   <h3>Transacciones:</h3>
   <ul id="lista-transacciones"></ul>
@@ -71,12 +79,14 @@
       }
     }
 
-    function mostrarTransacciones() {
+    function mostrarTransacciones(filtradas = null) {
       const lista = document.getElementById("lista-transacciones");
       lista.innerHTML = '';
-      transactions.forEach((t) => {
+      const datos = filtradas || transactions;
+
+      datos.forEach(async (t) => {
         const li = document.createElement("li");
-        li.innerHTML = `${t.date} - ${t.amount} (${t.category}) ${t.cantidad || ''}`;
+        li.innerHTML = `<strong>${t.date}</strong> - ${t.amount} (${t.category}) ${t.cantidad || ''}`;
 
         const btns = document.createElement("span");
         btns.className = "acciones";
@@ -92,6 +102,21 @@
         btns.appendChild(editar);
         btns.appendChild(borrar);
         li.appendChild(btns);
+
+        // Buscar imagen
+        try {
+          const archivo = await dbx.filesDownload({ path: `/imagenes/tx-${t.id}.txt` });
+          const blob = await archivo.result.fileBlob;
+          const base64 = await blob.text();
+
+          const img = document.createElement("img");
+          img.src = `data:image/jpeg;base64,${base64}`;
+          img.width = 120;
+          li.appendChild(img);
+        } catch (e) {
+          // No imagen
+        }
+
         lista.appendChild(li);
       });
     }
@@ -120,36 +145,54 @@
       const monto = parseFloat(document.getElementById("monto").value);
       const categoria = document.getElementById("categoria").value.trim();
       const cantidad = document.getElementById("cantidad").value.trim();
+      const imagenInput = document.getElementById("imagen");
 
       if (!fecha || isNaN(monto) || !categoria) {
         alert("Campos obligatorios incompletos.");
         return;
       }
 
+      let transId;
       if (id) {
-        // Editar existente
         const tx = transactions.find(t => t.id == id);
         if (tx) {
           tx.date = fecha;
           tx.amount = monto;
           tx.category = categoria;
           tx.cantidad = cantidad;
+          transId = tx.id;
         }
       } else {
-        // Agregar nueva
-        const nueva = {
-          id: transactions.length > 0 ? transactions[transactions.length - 1].id + 1 : 1,
-          date: fecha,
-          amount: monto,
-          category: categoria,
-          cantidad: cantidad
-        };
+        transId = transactions.length > 0 ? transactions[transactions.length - 1].id + 1 : 1;
+        const nueva = { id: transId, date: fecha, amount: monto, category: categoria, cantidad: cantidad };
         transactions.push(nueva);
       }
 
       await guardarEnDropbox();
+
+      // Imagen
+      const archivo = imagenInput.files[0];
+      if (archivo) {
+        const reader = new FileReader();
+        reader.onload = async function () {
+          const base64 = reader.result.split(',')[1];
+          try {
+            await dbx.filesUpload({
+              path: `/imagenes/tx-${transId}.txt`,
+              contents: base64,
+              mode: { '.tag': 'overwrite' }
+            });
+            mostrarTransacciones();
+          } catch (err) {
+            alert("No se pudo guardar imagen: " + err.message);
+          }
+        };
+        reader.readAsDataURL(archivo);
+      } else {
+        mostrarTransacciones();
+      }
+
       cancelarEdicion();
-      mostrarTransacciones();
     }
 
     async function eliminarTransaccion(id) {
@@ -169,6 +212,16 @@
       } catch (error) {
         alert("Error al guardar en Dropbox:\n" + (error?.error?.error_summary || error.message));
       }
+    }
+
+    function filtrarTransacciones() {
+      const texto = document.getElementById("buscador").value.toLowerCase();
+      const filtradas = transactions.filter(t =>
+        t.category.toLowerCase().includes(texto) ||
+        t.date.includes(texto) ||
+        (t.cantidad || '').toLowerCase().includes(texto)
+      );
+      mostrarTransacciones(filtradas);
     }
   </script>
 </body>
