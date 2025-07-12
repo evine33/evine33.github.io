@@ -154,18 +154,36 @@
 
       if (archivo) {
         const reader = new FileReader();
-        reader.onload = async () => {
-          const base64 = reader.result.split(",")[1];
-          try {
-            await dbx.filesUpload({
-              path: `/imagenes/tx-${transId}.txt`,
-              contents: base64,
-              mode: { '.tag': 'overwrite' }
-            });
-            mostrarTransacciones();
-          } catch (err) {
-            alert("No se pudo guardar la imagen: " + err.message);
-          }
+        reader.onload = async function () {
+          const img = new Image();
+          img.onload = async function () {
+            const MAX_DIMENSION = 600;
+            let { width, height } = img;
+            if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+              const scale = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height);
+              width = width * scale;
+              height = height * scale;
+            }
+
+            const canvas = document.createElement("canvas");
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, width, height);
+            const base64 = canvas.toDataURL("image/jpeg", 0.7).split(',')[1];
+
+            try {
+              await dbx.filesUpload({
+                path: `/imagenes/tx-${transId}.txt`,
+                contents: base64,
+                mode: { '.tag': 'overwrite' }
+              });
+              mostrarTransacciones();
+            } catch (err) {
+              alert("No se pudo guardar la imagen redimensionada: " + err.message);
+            }
+          };
+          img.src = reader.result;
         };
         reader.readAsDataURL(archivo);
       } else {
