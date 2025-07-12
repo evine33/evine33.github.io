@@ -209,6 +209,14 @@
       if (!confirm("¿Deseas eliminar esta transacción?")) return;
       transactions = transactions.filter(t => t.id !== id);
       await guardarEnDropbox();
+
+      // Eliminar imagen asociada
+      try {
+        await dbx.filesDeleteV2({ path: `/imagenes/tx-${id}.txt` });
+      } catch (e) {
+        console.warn("Imagen no encontrada o ya eliminada para transacción:", id);
+      }
+
       mostrarTransacciones();
     }
 
