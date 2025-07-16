@@ -15,6 +15,8 @@
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 9999; }
     .modal img { max-width: 90vw; max-height: 90vh; border-radius: 8px; }
     .modal.active { display: flex; }
+    .filtros { display: flex; gap: 1em; margin: 1em 0; flex-wrap: wrap; }
+    .filtros > * { flex: 1; min-width: 140px; }
     .error { background: #ffe0e0; color: #900; padding: 1em; margin: 1em 0; border: 1px solid #900; }
   </style>
 </head>
@@ -44,7 +46,13 @@
     <button type="button" onclick="cancelarEdicion()">❌ Cancelar</button>
   </form>
 
-  <input type="text" id="buscador" placeholder="🔍 Buscar..." oninput="filtrarTransacciones()">
+  <div class="filtros">
+    <input type="text" id="buscador" placeholder="🔍 Buscar texto" oninput="filtrarTransacciones()">
+    <select id="filtro-categoria" onchange="filtrarTransacciones()">
+      <option value="">Todas las categorías</option>
+    </select>
+    <input type="month" id="filtro-mes" onchange="filtrarTransacciones()">
+  </div>
 
   <ul id="lista-transacciones"></ul>
 
@@ -57,6 +65,8 @@
   <script>
     const APP_KEY = "k5t6sterc4j91oq";
     const REDIRECT_URI = "https://evine33.github.io/";
+    const ENCRYPT_KEY = "clave_simple";
+
     let dbx;
     let transactions = [];
 
@@ -74,21 +84,38 @@
       }
     };
 
+    function cifrar(texto) {
+      return btoa(unescape(encodeURIComponent(texto + ENCRYPT_KEY)));
+    }
+    function descifrar(cifrado) {
+      return decodeURIComponent(escape(atob(cifrado))).replace(ENCRYPT_KEY, "");
+    }
+
     async function cargarTransacciones() {
       try {
         const archivo = await dbx.filesDownload({ path: "/transactions.json" });
         const texto = await archivo.result.fileBlob.text();
-        transactions = JSON.parse(texto).transactions || [];
+        const json = JSON.parse(descifrar(texto));
+        transactions = json.transactions || [];
       } catch (e) {
         transactions = [];
       }
       mostrarTransacciones();
     }
 
+    function actualizarCategorias() {
+      const select = document.getElementById("filtro-categoria");
+      const categorias = [...new Set(transactions.map(t => t.category))];
+      select.innerHTML = '<option value="">Todas las categorías</option>' +
+        categorias.map(cat => `<option>${cat}</option>`).join("");
+    }
+
     function mostrarTransacciones(listaFiltrada = null) {
       const lista = document.getElementById("lista-transacciones");
       lista.innerHTML = "";
       const datos = listaFiltrada || transactions;
+
+      actualizarCategorias();
 
       datos.forEach(async (t) => {
         const li = document.createElement("li");
@@ -213,9 +240,10 @@
 
     async function guardarEnDropbox() {
       try {
+        const cifrado = cifrar(JSON.stringify({ transactions }, null, 2));
         await dbx.filesUpload({
           path: "/transactions.json",
-          contents: JSON.stringify({ transactions }, null, 2),
+          contents: cifrado,
           mode: { ".tag": "overwrite" }
         });
       } catch (error) {
@@ -239,11 +267,17 @@
 
     function filtrarTransacciones() {
       const texto = document.getElementById("buscador").value.toLowerCase();
-      const resultado = transactions.filter(t =>
-        t.category.toLowerCase().includes(texto) ||
-        t.date.includes(texto) ||
-        (t.cantidad || "").toLowerCase().includes(texto)
-      );
+      const categoria = document.getElementById("filtro-categoria").value;
+      const mes = document.getElementById("filtro-mes").value;
+
+      const resultado = transactions.filter(t => {
+        return (
+          (texto === '' || t.category.toLowerCase().includes(texto) || t.date.includes(texto) || (t.cantidad || "").toLowerCase().includes(texto)) &&
+          (categoria === '' || t.category === categoria) &&
+          (mes === '' || t.date.startsWith(mes))
+        );
+      });
+
       mostrarTransacciones(resultado);
     }
   </script>
