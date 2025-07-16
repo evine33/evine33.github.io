@@ -11,7 +11,10 @@
     li { margin: 1em 0; padding: 1em; background: #fff; border-radius: 8px; box-shadow: 0 0 5px rgba(0,0,0,0.1); position: relative; }
     .acciones { margin-top: 0.5em; }
     .acciones button { margin-right: 0.5em; }
-    img { display: block; margin-top: 0.5em; max-width: 100px; border-radius: 5px; }
+    img { display: block; margin-top: 0.5em; max-width: 100px; border-radius: 5px; cursor: pointer; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 9999; }
+    .modal img { max-width: 90vw; max-height: 90vh; border-radius: 8px; }
+    .modal.active { display: flex; }
     .error { background: #ffe0e0; color: #900; padding: 1em; margin: 1em 0; border: 1px solid #900; }
   </style>
 </head>
@@ -44,6 +47,11 @@
   <input type="text" id="buscador" placeholder="🔍 Buscar..." oninput="filtrarTransacciones()">
 
   <ul id="lista-transacciones"></ul>
+
+  <!-- Modal para imagen ampliada -->
+  <div class="modal" id="modal-img" onclick="cerrarModal()">
+    <img id="img-ampliada" src="">
+  </div>
 
   <script src="https://unpkg.com/dropbox/dist/Dropbox-sdk.min.js"></script>
   <script>
@@ -106,6 +114,7 @@
           const base64 = await archivoImg.result.fileBlob.text();
           const img = document.createElement("img");
           img.src = `data:image/jpeg;base64,${base64}`;
+          img.onclick = () => ampliarImagen(img.src);
           li.appendChild(img);
         } catch (e) {
           console.info(`Sin imagen para transacción ${t.id}`);
@@ -113,6 +122,15 @@
 
         lista.appendChild(li);
       });
+    }
+
+    function ampliarImagen(src) {
+      document.getElementById("img-ampliada").src = src;
+      document.getElementById("modal-img").classList.add("active");
+    }
+
+    function cerrarModal() {
+      document.getElementById("modal-img").classList.remove("active");
     }
 
     function editar(id) {
@@ -210,7 +228,6 @@
       transactions = transactions.filter(t => t.id !== id);
       await guardarEnDropbox();
 
-      // Eliminar imagen asociada
       try {
         await dbx.filesDeleteV2({ path: `/imagenes/tx-${id}.txt` });
       } catch (e) {
