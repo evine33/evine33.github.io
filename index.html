@@ -154,6 +154,7 @@
   <option value="negativo">Gasto</option>
 </select><br><br>
     <input type="number" id="monto" placeholder="Monto" required>
+    
     <input type="text" id="categoria" placeholder="Categoría" required>
     <input type="text" id="cantidad" placeholder="Cantidad (opcional)">
     <input type="file" id="imagen" accept="image/*">
@@ -175,7 +176,8 @@
   </div>
 
   <script src="https://unpkg.com/dropbox/dist/Dropbox-sdk.min.js"></script>
-<script>// JavaScript completo para Finanzas Pro
+<script>
+  // JavaScript completo para Finanzas Pro
 const APP_KEY = "k5t6sterc4j91oq";
 const REDIRECT_URI = "https://evine33.github.io/";
 let dbx;
@@ -251,6 +253,7 @@ async function cargarTransacciones() {
   } catch (e) {
     transactions = [];
   }
+  window.transactions_123 = transactions;
   showSpinner(false);
   mostrarTransacciones();
 }
@@ -386,6 +389,15 @@ async function guardarEnDropbox() {
       contents: JSON.stringify({ transactions }, null, 2),
       mode: { ".tag": "overwrite" }
     });
+
+    const contenidoJS = "window.transactions_123 = " + JSON.stringify(transactions, null, 2) + ";";
+    await dbx.filesUpload({
+      path: "/transactions.js",
+      contents: contenidoJS,
+      mode: { ".tag": "overwrite" }
+    });
+
+    window.transactions_123 = transactions;
   } catch (error) {
     alert("Error al guardar en Dropbox: " + (error?.error?.error_summary || error.message));
   }
@@ -420,6 +432,7 @@ function filtrarTransacciones() {
 
   mostrarTransacciones(resultado);
 }
+
 </script>
 </body>
 </html>
