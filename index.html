@@ -267,8 +267,11 @@ function mostrarTransacciones(filtradas = null) {
   datos.forEach(async t => {
     const card = document.createElement("div");
     card.className = "card";
+    const color = t.amount < 0 ? "#ffdddd" : "#ddffdd";
+    const signo = t.amount < 0 ? "🔻" : "🔺";
+    card.style.background = color;
     card.innerHTML = `
-      <strong>${t.date}</strong> - <b>${t.amount}</b> (${t.category})<br>
+      <strong>${t.date}</strong> - <b>${signo} ${t.amount}</b> (${t.category})<br>
       ${t.cantidad || ""}<div class="acciones">
         <button onclick="editar(${t.id})">✏️ Editar</button>
         <button onclick="eliminar(${t.id})">🗑️ Eliminar</button>
