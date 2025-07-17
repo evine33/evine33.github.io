@@ -181,20 +181,31 @@ const form = document.querySelector("form");
 const filtros = document.querySelector(".filtros");
 const transacciones = document.querySelector(".transacciones");
 
-form.style.display = "none";
+form.style.transition = "all 0.4s ease";
+form.style.opacity = 0;
+form.style.maxHeight = "0";
+form.style.overflow = "hidden";
+
 filtros.style.display = "none";
 transacciones.style.display = "none";
 
 const toggleFormBtn = document.createElement("button");
 toggleFormBtn.textContent = "+ Nueva Transacción";
 toggleFormBtn.style.display = "none";
-toggleFormBtn.style.margin = "1rem auto";
-toggleFormBtn.style.display = "block";
+toggleFormBtn.className = "toggle-btn";
 toggleFormBtn.onclick = () => {
-  form.style.display = form.style.display === "none" ? "block" : "none";
+  const isHidden = form.style.maxHeight === "0px" || form.style.maxHeight === "0";
+  if (isHidden) {
+    form.style.maxHeight = "800px";
+    form.style.opacity = 1;
+    toggleFormBtn.textContent = "➖ Ocultar formulario";
+  } else {
+    form.style.maxHeight = "0";
+    form.style.opacity = 0;
+    toggleFormBtn.textContent = "+ Nueva Transacción";
+  }
 };
 document.body.insertBefore(toggleFormBtn, form);
-toggleFormBtn.style.display = "none";
 
 function showSpinner(state) {
   spinner.style.display = state ? "block" : "none";
@@ -218,11 +229,8 @@ window.onload = async () => {
     connectBtn.remove();
 
     toggleFormBtn.style.display = "block";
-    form.style.display = "none";
     filtros.style.display = "flex";
     transacciones.style.display = "block";
-    toggleFormBtn.style.display = "block";
-    
 
     await cargarTransacciones();
   }
@@ -292,15 +300,20 @@ function editar(id) {
   if (!t) return;
   document.getElementById("edit-id").value = t.id;
   document.getElementById("fecha").value = t.date;
-  document.getElementById("monto").value = t.amount;
+  document.getElementById("monto").value = Math.abs(t.amount);
+  document.getElementById("tipo-monto").value = t.amount >= 0 ? "positivo" : "negativo";
   document.getElementById("categoria").value = t.category;
   document.getElementById("cantidad").value = t.cantidad || "";
-  form.style.display = "block";
+  form.style.maxHeight = "800px";
+  form.style.opacity = 1;
+  toggleFormBtn.textContent = "➖ Ocultar formulario";
 }
 function cancelarEdicion() {
   document.querySelector("form").reset();
   document.getElementById("edit-id").value = "";
-  form.style.display = "none";
+  form.style.maxHeight = "0";
+  form.style.opacity = 0;
+  toggleFormBtn.textContent = "+ Nueva Transacción";
 }
 
 async function guardarTransaccion(event) {
@@ -310,6 +323,8 @@ async function guardarTransaccion(event) {
   const id = document.getElementById("edit-id").value;
   const fecha = document.getElementById("fecha").value;
   const monto = parseFloat(document.getElementById("monto").value);
+  const tipo = document.getElementById("tipo-monto").value;
+  const amount = tipo === "negativo" ? -Math.abs(monto) : Math.abs(monto);
   const categoria = document.getElementById("categoria").value.trim();
   const cantidad = document.getElementById("cantidad").value.trim();
   const archivo = document.getElementById("imagen").files[0];
@@ -318,9 +333,9 @@ async function guardarTransaccion(event) {
 
   if (id) {
     const tx = transactions.find(t => t.id === transId);
-    Object.assign(tx, { date: fecha, amount: monto, category: categoria, cantidad });
+    Object.assign(tx, { date: fecha, amount, category: categoria, cantidad });
   } else {
-    transactions.push({ id: transId, date: fecha, amount: monto, category: categoria, cantidad });
+    transactions.push({ id: transId, date: fecha, amount, category: categoria, cantidad });
   }
 
   await guardarEnDropbox();
