@@ -148,7 +148,12 @@
   <form onsubmit="guardarTransaccion(event)">
     <input type="hidden" id="edit-id">
     <input type="date" id="fecha" required>
-    <input type="number" id="monto" placeholder="Monto" required>
+<label for="tipo-monto">Tipo:</label>
+<select id="tipo-monto" required>
+  <option value="positivo">Ingreso</option>
+  <option value="negativo">Gasto</option>
+</select><br><br>
+
     <input type="text" id="categoria" placeholder="Categoría" required>
     <input type="text" id="cantidad" placeholder="Cantidad (opcional)">
     <input type="file" id="imagen" accept="image/*">
