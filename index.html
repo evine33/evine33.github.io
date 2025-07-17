@@ -170,14 +170,31 @@
   </div>
 
   <script src="https://unpkg.com/dropbox/dist/Dropbox-sdk.min.js"></script>
-  <script>
-// JavaScript completo para Finanzas Pro
+<script>// JavaScript completo para Finanzas Pro
 const APP_KEY = "k5t6sterc4j91oq";
 const REDIRECT_URI = "https://evine33.github.io/";
 let dbx;
 let transactions = [];
 
 const spinner = document.getElementById("spinner");
+const form = document.querySelector("form");
+const filtros = document.querySelector(".filtros");
+const transacciones = document.querySelector(".transacciones");
+
+form.style.display = "none";
+filtros.style.display = "none";
+transacciones.style.display = "none";
+
+const toggleFormBtn = document.createElement("button");
+toggleFormBtn.textContent = "+ Nueva Transacción";
+toggleFormBtn.style.display = "none";
+toggleFormBtn.style.margin = "1rem auto";
+toggleFormBtn.style.display = "block";
+toggleFormBtn.onclick = () => {
+  form.style.display = form.style.display === "none" ? "block" : "none";
+};
+document.body.insertBefore(toggleFormBtn, form);
+toggleFormBtn.style.display = "none";
 
 function showSpinner(state) {
   spinner.style.display = state ? "block" : "none";
@@ -192,13 +209,21 @@ window.onload = async () => {
   const connectBtn = document.createElement("button");
   connectBtn.textContent = "🔐 Conectar con Dropbox";
   connectBtn.onclick = iniciarSesion;
-  document.body.insertBefore(connectBtn, document.querySelector("form"));
+  document.body.insertBefore(connectBtn, toggleFormBtn);
 
   const params = new URLSearchParams(window.location.hash.substring(1));
   const token = params.get("access_token");
   if (token) {
     dbx = new Dropbox.Dropbox({ accessToken: token });
     connectBtn.remove();
+
+    toggleFormBtn.style.display = "block";
+    form.style.display = "none";
+    filtros.style.display = "flex";
+    transacciones.style.display = "block";
+    toggleFormBtn.style.display = "block";
+    
+
     await cargarTransacciones();
   }
 };
@@ -270,10 +295,12 @@ function editar(id) {
   document.getElementById("monto").value = t.amount;
   document.getElementById("categoria").value = t.category;
   document.getElementById("cantidad").value = t.cantidad || "";
+  form.style.display = "block";
 }
 function cancelarEdicion() {
   document.querySelector("form").reset();
   document.getElementById("edit-id").value = "";
+  form.style.display = "none";
 }
 
 async function guardarTransaccion(event) {
@@ -370,7 +397,6 @@ function filtrarTransacciones() {
 
   mostrarTransacciones(resultado);
 }
-
-  </script>
+</script>
 </body>
 </html>
