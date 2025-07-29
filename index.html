@@ -5,94 +5,514 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Finanzas Pro - Gestor de Transacciones</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      margin: 0;
-      padding: 0;
-      background: linear-gradient(to bottom right, #f5f9ff, #d6e4f0);
-      color: #333;
-    }
+<style>body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(to bottom right, #f5f9ff, #d6e4f0);
+  color: #333;
+}
 
-    header {
-      background: #0056b3;
-      color: white;
-      padding: 1.5rem 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
+header {
+  background: #0056b3;
+  color: white;
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
 
-    header h1 {
-      margin: 0;
-      font-size: 2rem;
-      font-weight: 600;
-    }
+header h1 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 600;
+}
 
-    .logout-btn {
-      background: #dc3545;
-      padding: 0.6rem 1rem;
-      border-radius: 8px;
-      border: none;
-      color: white;
-      font-weight: 600;
-      cursor: pointer;
-    }
+main {
+  padding: 2rem 1rem;
+  max-width: 1100px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
 
-    .logout-btn:hover {
-      background: #b62d38;
-    }
+button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: background 0.3s ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
 
-    .empty {
-      font-style: italic;
-      color: #888;
-      padding: 1rem;
-    }
+button:hover {
+  background: #005dc1;
+}
 
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0;
-      width: 100vw; height: 100vh;
-      background: rgba(0, 0, 0, 0.7);
-      justify-content: center;
-      align-items: center;
-    }
+.hidden {
+  display: none;
+}
 
-    .modal.active {
-      display: flex;
-    }
+.spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
 
-    .modal img {
-      max-width: 90vw;
-      max-height: 90vh;
-      border-radius: 12px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.4);
-    }
-  </style>
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+}
+
+#transactionsList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.transaction-card {
+  background: white;
+  border-left: 5px solid #007bff;
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.transaction-card.income {
+  border-left-color: #28a745;
+}
+
+.transaction-card.expense {
+  border-left-color: #dc3545;
+}
+
+.transaction-meta {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.transaction-category {
+  font-size: 0.95rem;
+  color: #666;
+}
+
+.transaction-image {
+  margin-top: 0.5rem;
+  border-radius: 8px;
+  max-height: 160px;
+  object-fit: cover;
+  width: 100%;
+}
+
+#formSection {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.1);
+}
+
+form h2 {
+  margin-top: 0;
+  color: #0056b3;
+  font-weight: 600;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 0.75rem;
+  margin: 0.5rem 0 1rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+}
+
+.total-summary {
+  display: flex;
+  justify-content: space-between;
+  background: #fff;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.total-summary span {
+  color: #007bff;
+}
+
+.positive {
+  color: #28a745;
+}
+
+.negative {
+  color: #dc3545;
+}
+
+.img-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.25rem;
+}
+
+.img-actions button {
+  background: transparent;
+  border: none;
+  color: #dc3545;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.img-actions button:hover {
+  color: #a71d2a;
+}
+
+footer {
+  margin-top: 4rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #777;
+}
+
+@media (max-width: 768px) {
+  main {
+    padding: 1rem;
+  }
+
+  .total-summary {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  #transactionsList {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
 </head>
 <body>
-  <header>
-    <h1>💼 Finanzas Pro</h1>
-    <button class="logout-btn" onclick="cerrarSesion()">Cerrar sesión</button>
-  </header>
+  <h1>💼 Finanzas Pro</h1>
+  <div class="spinner" id="spinner"></div>
 
-  <!-- El resto de tu código HTML que ya tienes irá aquí (formulario, botones, secciones) -->
+  <form onsubmit="guardarTransaccion(event)">
+    <input type="hidden" id="edit-id">
+    <input type="date" id="fecha" required>
+<label for="tipo-monto">Tipo:</label>
+<select id="tipo-monto" required>
+  <option value="positivo">Ingreso</option>
+  <option value="negativo">Gasto</option>
+</select><br><br>
+    <input type="number" id="monto" placeholder="Monto" required>
+    
+    <input type="text" id="categoria" placeholder="Categoría" required>
+    <input type="text" id="cantidad" placeholder="Cantidad (opcional)">
+    <input type="file" id="imagen" accept="image/*">
+    <button type="submit">💾 Guardar Transacción</button>
+  </form>
+
+  <div class="filtros header-flex">
+    <input type="text" id="buscador" placeholder="Buscar..." oninput="filtrarTransacciones()">
+    <select id="filtro-categoria" onchange="filtrarTransacciones()">
+      <option value="">Todas</option>
+    </select>
+    <input type="month" id="filtro-mes" onchange="filtrarTransacciones()">
+  </div>
+
+  <div class="transacciones" id="lista-transacciones"></div>
 
   <div class="modal" id="modal-img" onclick="cerrarModal()">
     <img id="img-ampliada" src="">
   </div>
 
-  <script>
-    function cerrarSesion() {
-      localStorage.removeItem("dropbox_access_token");
-      location.reload();
-    }
+  <script src="https://unpkg.com/dropbox/dist/Dropbox-sdk.min.js"></script>
+<script>
+  // JavaScript completo para Finanzas Pro
+const APP_KEY = "k5t6sterc4j91oq";
+const REDIRECT_URI = "https://evine33.github.io/";
+let dbx;
+let transactions = [];
 
-    function cerrarModal() {
-      document.getElementById("modal-img").classList.remove("active");
-    }
-  </script>
+const spinner = document.getElementById("spinner");
+const form = document.querySelector("form");
+const filtros = document.querySelector(".filtros");
+const transacciones = document.querySelector(".transacciones");
+
+form.style.transition = "all 0.4s ease";
+form.style.opacity = 0;
+form.style.maxHeight = "0";
+form.style.overflow = "hidden";
+
+filtros.style.display = "none";
+transacciones.style.display = "none";
+
+const toggleFormBtn = document.createElement("button");
+toggleFormBtn.textContent = "+ Nueva Transacción";
+toggleFormBtn.style.display = "none";
+toggleFormBtn.className = "toggle-btn";
+toggleFormBtn.onclick = () => {
+  const isHidden = form.style.maxHeight === "0px" || form.style.maxHeight === "0";
+  if (isHidden) {
+    form.style.maxHeight = "800px";
+    form.style.opacity = 1;
+    toggleFormBtn.textContent = "➖ Ocultar formulario";
+  } else {
+    form.style.maxHeight = "0";
+    form.style.opacity = 0;
+    toggleFormBtn.textContent = "+ Nueva Transacción";
+  }
+};
+document.body.insertBefore(toggleFormBtn, form);
+
+function showSpinner(state) {
+  spinner.style.display = state ? "block" : "none";
+}
+
+function iniciarSesion() {
+  const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${APP_KEY}&response_type=token&redirect_uri=${REDIRECT_URI}`;
+  window.location.href = authUrl;
+}
+
+window.onload = async () => {
+  const connectBtn = document.createElement("button");
+  connectBtn.textContent = "🔐 Conectar con Dropbox";
+  connectBtn.onclick = iniciarSesion;
+  document.body.insertBefore(connectBtn, toggleFormBtn);
+
+  const params = new URLSearchParams(window.location.hash.substring(1));
+  const token = params.get("access_token");
+  if (token) {
+    dbx = new Dropbox.Dropbox({ accessToken: token });
+    connectBtn.remove();
+
+    toggleFormBtn.style.display = "block";
+    filtros.style.display = "flex";
+    transacciones.style.display = "block";
+
+    await cargarTransacciones();
+  }
+};
+
+async function cargarTransacciones() {
+  showSpinner(true);
+  try {
+    const archivo = await dbx.filesDownload({ path: "/transactions.json" });
+    const texto = await archivo.result.fileBlob.text();
+    const json = JSON.parse(texto);
+    transactions = json.transactions || [];
+  } catch (e) {
+    transactions = [];
+  }
+  window.transactions_123 = transactions;
+  showSpinner(false);
+  mostrarTransacciones();
+}
+
+function mostrarTransacciones(filtradas = null) {
+  const lista = document.getElementById("lista-transacciones");
+  lista.innerHTML = "";
+
+  const datos = filtradas || transactions;
+  if (datos.length === 0) {
+    lista.innerHTML = '<p class="empty">No hay transacciones</p>';
+    return;
+  }
+
+  const categorias = [...new Set(transactions.map(t => t.category))];
+  const select = document.getElementById("filtro-categoria");
+  select.innerHTML = '<option value="">Todas</option>' + categorias.map(c => `<option>${c}</option>`).join("");
+
+  datos.forEach(async t => {
+    const card = document.createElement("div");
+    card.className = "card";
+    const color = t.amount < 0 ? "#ffdddd" : "#ddffdd";
+    const signo = t.amount < 0 ? "🔻" : "🔺";
+    card.style.background = color;
+    card.innerHTML = `
+      <strong>${t.date}</strong> - <b>${signo} ${t.amount}</b> (${t.category})<br>
+      ${t.cantidad || ""}<div class="acciones">
+        <button onclick="editar(${t.id})">✏️ Editar</button>
+        <button onclick="eliminar(${t.id})">🗑️ Eliminar</button>
+      </div>`;
+
+    try {
+      const imgArchivo = await dbx.filesDownload({ path: `/imagenes/tx-${t.id}.txt` });
+      const base64 = await imgArchivo.result.fileBlob.text();
+      const img = document.createElement("img");
+      img.src = `data:image/jpeg;base64,${base64}`;
+      img.onclick = () => ampliarImagen(img.src);
+      card.appendChild(img);
+    } catch {}
+
+    lista.appendChild(card);
+  });
+}
+
+function ampliarImagen(src) {
+  document.getElementById("img-ampliada").src = src;
+  document.getElementById("modal-img").classList.add("active");
+}
+function cerrarModal() {
+  document.getElementById("modal-img").classList.remove("active");
+}
+
+function editar(id) {
+  const t = transactions.find(tx => tx.id === id);
+  if (!t) return;
+  document.getElementById("edit-id").value = t.id;
+  document.getElementById("fecha").value = t.date;
+  document.getElementById("monto").value = Math.abs(t.amount);
+  document.getElementById("tipo-monto").value = t.amount >= 0 ? "positivo" : "negativo";
+  document.getElementById("categoria").value = t.category;
+  document.getElementById("cantidad").value = t.cantidad || "";
+  form.style.maxHeight = "800px";
+  form.style.opacity = 1;
+  toggleFormBtn.textContent = "➖ Ocultar formulario";
+}
+function cancelarEdicion() {
+  document.querySelector("form").reset();
+  document.getElementById("edit-id").value = "";
+  form.style.maxHeight = "0";
+  form.style.opacity = 0;
+  toggleFormBtn.textContent = "+ Nueva Transacción";
+}
+
+async function guardarTransaccion(event) {
+  event.preventDefault();
+  if (!dbx) return alert("Debes iniciar sesión con Dropbox");
+
+  const id = document.getElementById("edit-id").value;
+  const fecha = document.getElementById("fecha").value;
+  const monto = parseFloat(document.getElementById("monto").value);
+  const tipo = document.getElementById("tipo-monto").value;
+  const amount = tipo === "negativo" ? -Math.abs(monto) : Math.abs(monto);
+  const categoria = document.getElementById("categoria").value.trim();
+  const cantidad = document.getElementById("cantidad").value.trim();
+  const archivo = document.getElementById("imagen").files[0];
+
+  let transId = id ? parseInt(id) : (transactions.at(-1)?.id || 0) + 1;
+
+  if (id) {
+    const tx = transactions.find(t => t.id === transId);
+    Object.assign(tx, { date: fecha, amount, category: categoria, cantidad });
+  } else {
+    transactions.push({ id: transId, date: fecha, amount, category: categoria, cantidad });
+  }
+
+  await guardarEnDropbox();
+
+  if (archivo) {
+    const reader = new FileReader();
+    reader.onload = async function () {
+      const img = new Image();
+      img.onload = async function () {
+        const canvas = document.createElement("canvas");
+        let scale = Math.min(600 / img.width, 600 / img.height);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const base64 = canvas.toDataURL("image/jpeg", 0.75).split(',')[1];
+
+        await dbx.filesUpload({
+          path: `/imagenes/tx-${transId}.txt`,
+          contents: base64,
+          mode: { '.tag': 'overwrite' }
+        });
+
+        mostrarTransacciones();
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(archivo);
+  } else {
+    mostrarTransacciones();
+  }
+
+  cancelarEdicion();
+}
+
+async function guardarEnDropbox() {
+  try {
+    await dbx.filesUpload({
+      path: "/transactions.json",
+      contents: JSON.stringify({ transactions }, null, 2),
+      mode: { ".tag": "overwrite" }
+    });
+
+    const contenidoJS = "window.transactions_123 = " + JSON.stringify(transactions, null, 2) + ";";
+    await dbx.filesUpload({
+      path: "/transactions.js",
+      contents: contenidoJS,
+      mode: { ".tag": "overwrite" }
+    });
+
+    window.transactions_123 = transactions;
+  } catch (error) {
+    alert("Error al guardar en Dropbox: " + (error?.error?.error_summary || error.message));
+  }
+}
+
+async function eliminar(id) {
+  if (!confirm("¿Eliminar esta transacción?")) return;
+  transactions = transactions.filter(t => t.id !== id);
+  await guardarEnDropbox();
+
+  try {
+    await dbx.filesDeleteV2({ path: `/imagenes/tx-${id}.txt` });
+  } catch (e) {
+    console.warn("Imagen ya eliminada o no encontrada");
+  }
+
+  mostrarTransacciones();
+}
+
+function filtrarTransacciones() {
+  const texto = document.getElementById("buscador").value.toLowerCase();
+  const categoria = document.getElementById("filtro-categoria").value;
+  const mes = document.getElementById("filtro-mes").value;
+
+  const resultado = transactions.filter(t => {
+    return (
+      (!texto || t.category.toLowerCase().includes(texto) || t.date.includes(texto) || (t.cantidad || "").toLowerCase().includes(texto)) &&
+      (!categoria || t.category === categoria) &&
+      (!mes || t.date.startsWith(mes))
+    );
+  });
+
+  mostrarTransacciones(resultado);
+}
+
+</script>
 </body>
 </html>
