@@ -1088,39 +1088,59 @@ const USERS = {};
 
 /* ════════ INIT ════════ */
 window.addEventListener('load', async () => {
-  // Populate users after external scripts load
+  // Populate hardcoded users
   if (window.user_123)   USERS['123']   = window.user_123;
   if (window.user_tobix) USERS['tobix'] = window.user_tobix;
 
-  // Handle Dropbox OAuth callback
-  const hashParams = new URLSearchParams(window.location.hash.substring(1));
+  // ── Detect Dropbox OAuth callback (token in URL hash) ──
+  const hashParams    = new URLSearchParams(window.location.hash.substring(1));
   const tokenFromHash = hashParams.get('access_token');
   const storedToken   = localStorage.getItem('dbx_token');
-  const token = tokenFromHash || storedToken;
+  const isDropboxReturn = !!tokenFromHash; // came back from Dropbox OAuth
 
   if (tokenFromHash) {
     localStorage.setItem('dbx_token', tokenFromHash);
+    // Clean URL immediately so it looks tidy
     history.replaceState(null, '', window.location.pathname);
   }
 
+  const token = tokenFromHash || storedToken;
+
   if (token) {
+    setLoadingMsg('Conectando con Dropbox…');
     try {
       dbx = new Dropbox.Dropbox({ accessToken: token });
       await dbx.usersGetCurrentAccount();
       setDbxConnected(true);
     } catch(e) {
+      // Token invalid/expired
       localStorage.removeItem('dbx_token');
       dbx = null;
       setDbxConnected(false);
     }
   }
 
-  // Check if already logged in
+  // ── Restore user session ──
   const savedUser = localStorage.getItem('current_user');
+
   if (savedUser && USERS[savedUser]) {
+    // Session exists — go straight into the app
     currentUser = USERS[savedUser];
-    showApp();
+    showApp(isDropboxReturn);
+  } else if (isDropboxReturn) {
+    // Came back from Dropbox but no password session saved
+    // Show login screen — user just needs to re-enter password once
+    // We keep the dbx token saved so after login it connects automatically
+    hideLoading();
+    document.getElementById('login-screen').style.display = 'flex';
+    // Show a helpful hint on the login box
+    const hint = document.createElement('p');
+    hint.style.cssText = 'color:var(--green);font-size:.75rem;text-align:center;margin-top:-.5rem;font-family:"DM Mono",monospace;';
+    hint.textContent = '✅ Dropbox conectado — ingresa tu contraseña para continuar';
+    const box = document.querySelector('.login-box');
+    box.insertBefore(hint, box.querySelector('.btn-gold'));
   } else {
+    // Normal first visit
     hideLoading();
     document.getElementById('login-screen').style.display = 'flex';
   }
@@ -1143,7 +1163,9 @@ function login() {
     currentUser = USERS[pass];
     localStorage.setItem('current_user', pass);
     document.getElementById('login-screen').style.display = 'none';
-    showApp();
+    // If Dropbox token was already saved (e.g. returned from OAuth), go to Transacciones
+    const hasDbxToken = !!localStorage.getItem('dbx_token');
+    showApp(hasDbxToken);
   } else {
     const inp = document.getElementById('password');
     inp.style.borderColor = 'var(--red)';
@@ -1152,12 +1174,19 @@ function login() {
   }
 }
 
-function showApp() {
+function showApp(goToTransacciones = false) {
   document.getElementById('app').style.display = 'block';
   hideLoading();
   loadDashboard();
-  if (dbx) loadDbxTransacciones();
   updateDbxMoreCard();
+  if (dbx) {
+    loadDbxTransacciones();
+    // If returning from Dropbox OAuth, jump straight to Transacciones tab
+    if (goToTransacciones) {
+      showSection('sec-transacciones');
+      showToast('Dropbox conectado ✅', 'Tus transacciones se están cargando.', 'success', 4000);
+    }
+  }
 }
 
 /* ════════ SECTION NAV ════════ */
