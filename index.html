@@ -1,527 +1,509 @@
-<!DOCTYPE html>
 <html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<title>₲ Gestión</title>
-<script src="https://cdn.jsdelivr.net/npm/dropbox/build/Dropbox-sdk.min.js"></script>
-<script src="https://kit.fontawesome.com/32ac7cd722.js" crossorigin="anonymous"></script>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Mono:wght@300;400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#0a0c10;--card:#111318;--card2:#161a22;--border:#1e2330;--gold:#c9a84c;--gold-l:#e8c96a;--gold-d:rgba(201,168,76,.13);--green:#2ecc8a;--red:#e05c5c;--blue:#4a90d9;--txt:#eef0f5;--txt2:#7a8296;--txt3:#3d4457;--r:14px;--rs:10px;--safe-b:env(safe-area-inset-bottom,0px);--safe-t:env(safe-area-inset-top,0px);}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-*{max-width:100%;}
-html,body{height:100%;}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);overflow-x:hidden;padding-bottom:calc(80px + var(--safe-b));}
-img{max-width:100%;height:auto;}
-.bg-grid{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(201,168,76,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.03) 1px,transparent 1px);background-size:40px 40px;}
-.bg-glow{position:fixed;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(201,168,76,.07) 0%,transparent 70%);top:-100px;left:-100px;pointer-events:none;z-index:0;}
-#topbar{position:sticky;top:0;z-index:50;background:rgba(10,12,16,.95);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:.65rem .9rem;padding-top:calc(.65rem + var(--safe-t));gap:.6rem;min-height:52px;}
-.topbar-back{background:none;border:none;color:var(--txt2);padding:.4rem;cursor:pointer;font-size:1rem;display:flex;align-items:center;text-decoration:none;}
-.topbar-title{font-family:'Playfair Display',serif;color:var(--gold);font-size:1rem;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-#dbx-status{font-size:.65rem;font-family:'DM Mono',monospace;padding:.28rem .6rem;border-radius:20px;border:1px solid var(--border);color:var(--txt2);display:flex;align-items:center;gap:.3rem;white-space:nowrap;flex-shrink:0;}
-#dbx-status.on{border-color:rgba(46,204,138,.4);color:var(--green);}
-#sync-row{display:none;align-items:center;gap:.4rem;color:var(--txt2);font-size:.75rem;flex-shrink:0;}
-.spin{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:rotate .8s linear infinite;flex-shrink:0;display:inline-block;}
-.btn-gold{background:linear-gradient(135deg,var(--gold),#a8762e);color:#0a0c10;font-weight:600;border:none;border-radius:var(--rs);padding:.9rem 1rem;cursor:pointer;font-size:.92rem;font-family:'Inter',sans-serif;width:100%;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:.5rem;min-height:50px;letter-spacing:.04em;}
-.btn-gold:active{opacity:.82;}
-.btn-secondary{background:var(--card2);border:1px solid var(--border);color:var(--txt2);border-radius:var(--rs);padding:.75rem 1rem;cursor:pointer;font-size:.85rem;font-family:'Inter',sans-serif;min-height:44px;display:inline-flex;align-items:center;gap:.4rem;}
-#connect-screen{display:flex;align-items:center;justify-content:center;min-height:70vh;padding:1.5rem;position:relative;z-index:1;}
-.connect-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:2rem 1.5rem;width:100%;display:flex;flex-direction:column;gap:1.25rem;box-shadow:0 30px 80px rgba(0,0,0,.6);text-align:center;}
-.connect-icon{font-size:2.5rem;}
-.connect-title{font-family:'Playfair Display',serif;font-size:1.3rem;color:var(--gold);}
-.connect-desc{color:var(--txt2);font-size:.82rem;line-height:1.7;}
-.feature-list{list-style:none;display:flex;flex-direction:column;gap:.5rem;text-align:left;}
-.feature-list li{display:flex;align-items:center;gap:.6rem;font-size:.8rem;color:var(--txt2);background:var(--card2);border:1px solid var(--border);border-radius:var(--rs);padding:.55rem .85rem;}
-.feature-list li i{color:var(--gold);width:14px;flex-shrink:0;}
-#main-app{display:none;position:relative;z-index:1;}
-.section-pad{padding:.9rem;display:flex;flex-direction:column;gap:.9rem;}
-.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:.9rem;overflow:hidden;}
-.card-label{font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--txt2);margin-bottom:.55rem;}
-.pills-row{display:flex;gap:.45rem;overflow-x:auto;}
-.pills-row::-webkit-scrollbar{display:none;}
-.pill{background:var(--card);border:1px solid var(--border);border-radius:30px;padding:.4rem .8rem;white-space:nowrap;font-family:'DM Mono',monospace;font-size:.72rem;display:flex;align-items:center;gap:.35rem;flex-shrink:0;}
-.pill .lbl{color:var(--txt2);}
-.pill.g .val{color:var(--green);}
-.pill.r .val{color:var(--red);}
-.pill.o .val{color:var(--gold-l);}
-.f-input{background:var(--bg);border:1px solid var(--border);color:var(--txt);border-radius:var(--rs);padding:.75rem .9rem;font-family:'Inter',sans-serif;font-size:.85rem;outline:none;transition:border-color .2s;width:100%;-webkit-appearance:none;min-height:46px;}
-.f-input:focus{border-color:var(--gold);}
-.f-input option{background:#111318;}
-.dbx-grid{display:flex;flex-direction:column;gap:.75rem;}
-.dbx-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:.85rem .9rem;display:flex;flex-direction:column;gap:.45rem;position:relative;overflow:hidden;animation:fadeUp .3s ease both;}
-.dbx-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;}
-.dbx-card.inc::before{background:var(--green);}
-.dbx-card.exp::before{background:var(--red);}
-.dbx-row{display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;min-width:0;}
-.dbx-amount{font-family:'DM Mono',monospace;font-size:1.05rem;font-weight:500;}
-.dbx-amount.p{color:var(--green);}
-.dbx-amount.n{color:var(--red);}
-.dbx-badge{background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:.18rem .6rem;font-size:.66rem;color:var(--txt2);white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis;}
-.dbx-desc{font-size:.76rem;color:var(--txt2);line-height:1.4;}
-.dbx-actions{display:flex;gap:.45rem;justify-content:flex-end;}
-.dbx-btn{background:var(--card2);border:1px solid var(--border);color:var(--txt2);border-radius:var(--rs);padding:.4rem .7rem;cursor:pointer;font-size:.72rem;font-family:'Inter',sans-serif;min-height:34px;display:flex;align-items:center;gap:.3rem;}
-.dbx-btn.edit:active{color:var(--gold);}
-.dbx-btn.del:active{color:var(--red);}
-.dbx-img{width:100%;max-height:130px;object-fit:cover;border-radius:var(--rs);cursor:zoom-in;}
-.empty-state{text-align:center;padding:3rem 1rem;color:var(--txt3);}
-.empty-state i{font-size:2.5rem;display:block;margin-bottom:.75rem;}
-#fab{position:fixed;bottom:calc(1.25rem + var(--safe-b));right:1.25rem;z-index:100;width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#a8762e);color:#0a0c10;border:none;cursor:pointer;font-size:1.3rem;display:none;align-items:center;justify-content:center;box-shadow:0 6px 24px rgba(201,168,76,.4);}
-#fab.visible{display:flex;}
-#fab:active{transform:scale(.92);}
-.overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.82);backdrop-filter:blur(8px);display:none;align-items:flex-end;justify-content:center;}
-.overlay.open{display:flex;}
-.sheet{background:var(--card);border:1px solid var(--border);border-radius:20px 20px 0 0;padding:1.25rem 1rem;padding-bottom:calc(1.25rem + var(--safe-b));width:100%;max-height:90vh;overflow-y:auto;position:relative;display:flex;flex-direction:column;gap:.9rem;animation:slideUp .25s ease both;-webkit-overflow-scrolling:touch;}
-.sheet::-webkit-scrollbar{display:none;}
-.sheet-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto .25rem;flex-shrink:0;}
-.sheet-title{font-family:'Playfair Display',serif;font-size:1.15rem;color:var(--gold);}
-.close-x{position:absolute;top:1rem;right:1rem;background:none;border:none;color:var(--txt2);font-size:1.2rem;cursor:pointer;padding:.25rem;z-index:2;}
-.field{display:flex;flex-direction:column;gap:.3rem;}
-.field label{font-size:.62rem;text-transform:uppercase;letter-spacing:.1em;color:var(--txt2);}
-.field input,.field select,.field textarea{background:var(--bg);border:1px solid var(--border);color:var(--txt);border-radius:var(--rs);padding:.8rem .9rem;font-family:'Inter',sans-serif;font-size:.88rem;outline:none;transition:border-color .2s;width:100%;-webkit-appearance:none;min-height:46px;}
-.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold);}
-.field select option{background:#111318;}
-.field textarea{resize:vertical;min-height:70px;line-height:1.5;}
-.field input[type="file"]{padding:.6rem .8rem;font-size:.78rem;min-height:44px;}
-.form-row{display:flex;gap:.6rem;}
-.form-row .field{flex:1;min-width:0;}
-#img-preview{width:100%;max-height:140px;object-fit:cover;border-radius:var(--rs);border:1px solid var(--border);display:none;margin-top:.5rem;}
-.btn-row{display:flex;gap:.55rem;justify-content:flex-end;flex-wrap:wrap;margin-top:.35rem;}
-#lightbox{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.95);display:none;align-items:center;justify-content:center;}
-#lightbox.open{display:flex;}
-#lightbox img{max-width:95vw;max-height:90vh;border-radius:var(--r);}
-#toasts{position:fixed;bottom:calc(80px + var(--safe-b) + .5rem);left:.75rem;right:.75rem;z-index:8000;display:flex;flex-direction:column;gap:.45rem;pointer-events:none;}
-.toast{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:.75rem .9rem;display:flex;gap:.6rem;align-items:flex-start;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:fadeUp .25s ease both;pointer-events:all;overflow:hidden;}
-.toast.success{border-left:3px solid var(--green);}
-.toast.warning{border-left:3px solid var(--gold);}
-.toast.danger{border-left:3px solid var(--red);}
-.toast.info{border-left:3px solid var(--blue);}
-.toast-title{font-size:.8rem;font-weight:600;color:var(--txt);}
-.toast-msg{font-size:.72rem;color:var(--txt2);line-height:1.4;}
-.toast-out{animation:toastOut .2s ease forwards;}
-#loading-overlay{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1rem;transition:opacity .3s;}
-#loading-overlay .spin{width:32px;height:32px;border-width:3px;}
-#loading-overlay p{color:var(--txt2);font-size:.82rem;font-family:'DM Mono',monospace;}
-#loading-overlay.hide{opacity:0;pointer-events:none;}
-#loading-overlay.gone{display:none;}
-@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
-@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
-@keyframes toastOut{to{opacity:0;transform:translateY(6px) scale(.96);}}
-@keyframes rotate{to{transform:rotate(360deg);}}
-</style>
-</head>
-<body>
-<div class="bg-grid"></div>
-<div class="bg-glow"></div>
-<div id="loading-overlay"><div class="spin"></div><p>Conectando…</p></div>
+ <head> 
+  <meta charset="UTF-8"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <title>Finanzas Pro - Gestor de Transacciones</title> 
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"> 
+  <style>body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(to bottom right, #f5f9ff, #d6e4f0);
+  color: #333;
+}
 
-<div id="topbar">
-  <a href="index.html" class="topbar-back"><i class="fa-solid fa-arrow-left"></i></a>
-  <div class="topbar-title">Gestión Dropbox</div>
-  <div id="sync-row"><div class="spin"></div></div>
-  <div id="dbx-status"><i class="fa-brands fa-dropbox"></i> <span id="dbx-txt">Desconectado</span></div>
-</div>
+header {
+  background: #0056b3;
+  color: white;
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
 
-<div id="connect-screen">
-  <div class="connect-box">
-    <div class="connect-icon">☁️</div>
-    <div class="connect-title">Conectar Dropbox</div>
-    <p class="connect-desc">Conecta tu Dropbox para guardar y sincronizar transacciones en la nube.</p>
-    <ul class="feature-list">
-      <li><i class="fa-solid fa-plus"></i> Agregar transacciones</li>
-      <li><i class="fa-solid fa-pen"></i> Editar y eliminar</li>
-      <li><i class="fa-solid fa-image"></i> Guardar comprobantes</li>
-      <li><i class="fa-solid fa-rotate"></i> Sincronización automática</li>
-    </ul>
-    <button class="btn-gold" onclick="conectarDropbox()"><i class="fa-brands fa-dropbox"></i> Conectar con Dropbox</button>
-  </div>
-</div>
+header h1 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 600;
+}
 
-<div id="main-app">
-  <div class="section-pad">
-    <div style="display:flex;flex-direction:column;gap:.6rem;">
-      <input type="text" id="f-buscar" placeholder="Buscar…" oninput="renderLista()" class="f-input">
-      <div style="display:flex;gap:.6rem;">
-        <select id="f-cat" onchange="renderLista()" class="f-input" style="flex:1;"></select>
-        <select id="f-tipo" onchange="renderLista()" class="f-input" style="flex:1;">
-          <option value="">Todos</option>
-          <option value="inc">Ingresos</option>
-          <option value="exp">Gastos</option>
-        </select>
-      </div>
-      <input type="month" id="f-mes" onchange="renderLista()" class="f-input">
-    </div>
-    <div class="pills-row" id="summary-pills"></div>
-    <div class="dbx-grid" id="tx-grid">
-      <div class="empty-state"><i class="fa-solid fa-inbox"></i><p>Sin transacciones aún.</p></div>
-    </div>
-    <button class="btn-secondary" onclick="desconectarDropbox()" style="width:100%;justify-content:center;">
-      <i class="fa-brands fa-dropbox"></i> Desconectar
-    </button>
-  </div>
-</div>
+main {
+  padding: 2rem 1rem;
+  max-width: 1100px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
 
-<button id="fab" onclick="abrirFormulario()"><i class="fa-solid fa-plus"></i></button>
+button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: background 0.3s ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
 
-<div class="overlay" id="overlay-form">
-  <div class="sheet">
-    <div class="sheet-handle"></div>
-    <button class="close-x" onclick="closeOverlay('overlay-form')">✕</button>
-    <div class="sheet-title" id="form-title">Nueva Transacción</div>
-    <div class="form-row">
-      <div class="field"><label>Fecha</label><input type="date" id="f-fecha"></div>
-      <div class="field"><label>Tipo</label>
-        <select id="f-tipo-monto"><option value="inc">Ingreso</option><option value="exp">Gasto</option></select>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="field"><label>Monto (L)</label><input type="number" id="f-monto" placeholder="0.00" min="0" step="0.01"></div>
-      <div class="field"><label>Categoría</label><input type="text" id="f-categoria" placeholder="Ej: Comida" list="cats-list"><datalist id="cats-list"></datalist></div>
-    </div>
-    <div class="field"><label>Descripción <span style="color:var(--txt3)">(opcional)</span></label><textarea id="f-desc" placeholder="Detalle…"></textarea></div>
-    <div class="field"><label>Referencia <span style="color:var(--txt3)">(opcional)</span></label><input type="text" id="f-cant" placeholder="Ej: Factura #123"></div>
-    <div class="field"><label>Comprobante <span style="color:var(--txt3)">(opcional)</span></label>
-      <input type="file" id="f-img" accept="image/*" onchange="previewImg(this)">
-      <img id="img-preview" src="" alt="">
-    </div>
-    <div class="btn-row">
-      <button class="btn-secondary" onclick="closeOverlay('overlay-form')">Cancelar</button>
-      <button class="btn-gold" onclick="guardarTransaccion()" style="width:auto;justify-content:center;"><i class="fa-solid fa-floppy-disk"></i> Guardar</button>
-    </div>
-    <input type="hidden" id="f-edit-id">
-  </div>
-</div>
+button:hover {
+  background: #005dc1;
+}
 
-<div id="lightbox" onclick="document.getElementById('lightbox').classList.remove('open')">
-  <img id="lb-img" src="" alt="">
-</div>
-<div id="toasts"></div>
+.hidden {
+  display: none;
+}
 
-<script>
-const APP_KEY   = 'k5t6sterc4j91oq';
-const REDIRECT  = 'https://evine33.github.io/';
-const JSON_PATH = '/transactions.json';
-const JS_PATH   = '/transactions.js';
-const IMG_DIR   = '/imagenes';
+.spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
 
-let dbx = null, txs = [], editingId = null, imgCache = {};
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
 
-window.addEventListener('load', async function() {
-  var hash = new URLSearchParams(window.location.hash.substring(1));
-  var tokenFromHash = hash.get('access_token');
-  var storedToken   = localStorage.getItem('dbx_token');
-  var token = tokenFromHash || storedToken;
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+}
 
-  if (tokenFromHash) {
-    localStorage.setItem('dbx_token', tokenFromHash);
-    history.replaceState(null, '', window.location.pathname);
+#transactionsList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.transaction-card {
+  background: white;
+  border-left: 5px solid #007bff;
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.transaction-card.income {
+  border-left-color: #28a745;
+}
+
+.transaction-card.expense {
+  border-left-color: #dc3545;
+}
+
+.transaction-meta {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.transaction-category {
+  font-size: 0.95rem;
+  color: #666;
+}
+
+.transaction-image {
+  margin-top: 0.5rem;
+  border-radius: 8px;
+  max-height: 160px;
+  object-fit: cover;
+  width: 100%;
+}
+
+#formSection {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.1);
+}
+
+form h2 {
+  margin-top: 0;
+  color: #0056b3;
+  font-weight: 600;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 0.75rem;
+  margin: 0.5rem 0 1rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+}
+
+.total-summary {
+  display: flex;
+  justify-content: space-between;
+  background: #fff;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.total-summary span {
+  color: #007bff;
+}
+
+.positive {
+  color: #28a745;
+}
+
+.negative {
+  color: #dc3545;
+}
+
+.img-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.25rem;
+}
+
+.img-actions button {
+  background: transparent;
+  border: none;
+  color: #dc3545;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.img-actions button:hover {
+  color: #a71d2a;
+}
+
+footer {
+  margin-top: 4rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #777;
+}
+
+@media (max-width: 768px) {
+  main {
+    padding: 1rem;
   }
 
-  if (token) {
-    try {
-      dbx = new Dropbox.Dropbox({ accessToken: token });
-      await dbx.usersGetCurrentAccount();
-      setConnected(true);
-      await cargarTransacciones();
-    } catch(e) {
-      localStorage.removeItem('dbx_token');
-      dbx = null;
-      setConnected(false);
-    }
+  .total-summary {
+    flex-direction: column;
+    gap: 0.5rem;
   }
-  hideLoading();
-});
 
-function hideLoading() {
-  var el = document.getElementById('loading-overlay');
-  el.classList.add('hide');
-  setTimeout(function() { el.classList.add('gone'); }, 320);
+  #transactionsList {
+    grid-template-columns: 1fr;
+  }
 }
+</style> 
+ </head> 
+ <body> 
+  <h1>💼 Finanzas Pro</h1> 
+  <div class="spinner" id="spinner"></div> 
+  <button>🔐 Conectar con Dropbox</button>
+  <button class="toggle-btn" style="display: none;">+ Nueva Transacción</button>
+  <form onsubmit="guardarTransaccion(event)" style="transition: 0.4s; opacity: 0; max-height: 0px; overflow: hidden;"> 
+   <input type="hidden" id="edit-id"> 
+   <input type="date" id="fecha" required> 
+   <label for="tipo-monto">Tipo:</label> 
+   <select id="tipo-monto" required> <option value="positivo">Ingreso</option> <option value="negativo">Gasto</option> </select>
+   <br>
+   <br> 
+   <input type="number" id="monto" placeholder="Monto" required> 
+   <input type="text" id="categoria" placeholder="Categoría" required> 
+   <input type="text" id="cantidad" placeholder="Cantidad (opcional)"> 
+   <input type="file" id="imagen" accept="image/*"> 
+   <button type="submit">💾 Guardar Transacción</button> 
+  </form> 
+  <div class="filtros header-flex" style="display: none;"> 
+   <input type="text" id="buscador" placeholder="Buscar..." oninput="filtrarTransacciones()"> 
+   <select id="filtro-categoria" onchange="filtrarTransacciones()"> <option value="">Todas</option> </select> 
+   <input type="month" id="filtro-mes" onchange="filtrarTransacciones()"> 
+  </div> 
+  <div class="transacciones" id="lista-transacciones" style="display: none;"></div> 
+  <div class="modal" id="modal-img" onclick="cerrarModal()"> 
+   <img id="img-ampliada" src=""> 
+  </div> 
+  <script>
+  // JavaScript completo para Finanzas Pro
+const APP_KEY = "k5t6sterc4j91oq";
+const REDIRECT_URI = "https://evine33.github.io/";
+let dbx;
+let transactions = [];
 
-function conectarDropbox() {
-  var url = 'https://www.dropbox.com/oauth2/authorize?client_id=' + APP_KEY + '&response_type=token&redirect_uri=' + encodeURIComponent(REDIRECT);
-  window.location.href = url;
-}
+const spinner = document.getElementById("spinner");
+const form = document.querySelector("form");
+const filtros = document.querySelector(".filtros");
+const transacciones = document.querySelector(".transacciones");
 
-function desconectarDropbox() {
-  localStorage.removeItem('dbx_token');
-  dbx = null; txs = []; imgCache = {};
-  setConnected(false);
-  showToast('Desconectado', 'Sesión de Dropbox cerrada.', 'info');
-}
+form.style.transition = "all 0.4s ease";
+form.style.opacity = 0;
+form.style.maxHeight = "0";
+form.style.overflow = "hidden";
 
-function setConnected(state) {
-  var status = document.getElementById('dbx-status');
-  var txt    = document.getElementById('dbx-txt');
-  var conn   = document.getElementById('connect-screen');
-  var app    = document.getElementById('main-app');
-  var fab    = document.getElementById('fab');
-  if (state) {
-    status.classList.add('on'); txt.textContent = 'Conectado';
-    conn.style.display = 'none'; app.style.display = 'block';
-    fab.classList.add('visible');
+filtros.style.display = "none";
+transacciones.style.display = "none";
+
+const toggleFormBtn = document.createElement("button");
+toggleFormBtn.textContent = "+ Nueva Transacción";
+toggleFormBtn.style.display = "none";
+toggleFormBtn.className = "toggle-btn";
+toggleFormBtn.onclick = () => {
+  const isHidden = form.style.maxHeight === "0px" || form.style.maxHeight === "0";
+  if (isHidden) {
+    form.style.maxHeight = "800px";
+    form.style.opacity = 1;
+    toggleFormBtn.textContent = "➖ Ocultar formulario";
   } else {
-    status.classList.remove('on'); txt.textContent = 'Desconectado';
-    conn.style.display = 'flex'; app.style.display = 'none';
-    fab.classList.remove('visible');
+    form.style.maxHeight = "0";
+    form.style.opacity = 0;
+    toggleFormBtn.textContent = "+ Nueva Transacción";
   }
+};
+document.body.insertBefore(toggleFormBtn, form);
+
+function showSpinner(state) {
+  spinner.style.display = state ? "block" : "none";
 }
 
-function setSyncStatus(v) {
-  document.getElementById('sync-row').style.display = v ? 'flex' : 'none';
+function iniciarSesion() {
+  const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${APP_KEY}&response_type=token&redirect_uri=${REDIRECT_URI}`;
+  window.location.href = authUrl;
 }
+
+window.onload = async () => {
+  const connectBtn = document.createElement("button");
+  connectBtn.textContent = "🔐 Conectar con Dropbox";
+  connectBtn.onclick = iniciarSesion;
+  document.body.insertBefore(connectBtn, toggleFormBtn);
+
+  const params = new URLSearchParams(window.location.hash.substring(1));
+  const token = params.get("access_token");
+  if (token) {
+    dbx = new Dropbox.Dropbox({ accessToken: token });
+    connectBtn.remove();
+
+    toggleFormBtn.style.display = "block";
+    filtros.style.display = "flex";
+    transacciones.style.display = "block";
+
+    await cargarTransacciones();
+  }
+};
 
 async function cargarTransacciones() {
-  setSyncStatus(true);
+  showSpinner(true);
   try {
-    var res  = await dbx.filesDownload({ path: JSON_PATH });
-    var txt2 = await res.result.fileBlob.text();
-    var json = JSON.parse(txt2);
-    txs = Array.isArray(json.transactions) ? json.transactions : [];
-  } catch(e) { txs = []; }
-  setSyncStatus(false);
-  renderLista();
-  updateCatFilter();
-  showToast('Cargado', txs.length + ' transacciones sincronizadas.', 'success');
+    const archivo = await dbx.filesDownload({ path: "/transactions.json" });
+    const texto = await archivo.result.fileBlob.text();
+    const json = JSON.parse(texto);
+    transactions = json.transactions || [];
+  } catch (e) {
+    transactions = [];
+  }
+  window.transactions_123 = transactions;
+  showSpinner(false);
+  mostrarTransacciones();
 }
 
-async function guardarEnDropbox() {
-  setSyncStatus(true);
-  try {
-    await dbx.filesUpload({
-      path: JSON_PATH, mode: { '.tag': 'overwrite' },
-      contents: JSON.stringify({ transactions: txs }, null, 2)
-    });
-    var js = 'window.transactions_tobix = ' + JSON.stringify(txs, null, 2) + ';';
-    await dbx.filesUpload({ path: JS_PATH, mode: { '.tag': 'overwrite' }, contents: js });
-    window.transactions_tobix = txs;
-  } catch(e) {
-    showToast('Error al guardar', e.message || 'Error desconocido', 'danger');
-    throw e;
-  } finally { setSyncStatus(false); }
+function mostrarTransacciones(filtradas = null) {
+  const lista = document.getElementById("lista-transacciones");
+  lista.innerHTML = "";
+
+  const datos = filtradas || transactions;
+  if (datos.length === 0) {
+    lista.innerHTML = '<p class="empty">No hay transacciones</p>';
+    return;
+  }
+
+  const categorias = [...new Set(transactions.map(t => t.category))];
+  const select = document.getElementById("filtro-categoria");
+  select.innerHTML = '<option value="">Todas</option>' + categorias.map(c => `<option>${c}</option>`).join("");
+
+  datos.forEach(async t => {
+    const card = document.createElement("div");
+    card.className = "card";
+    const color = t.amount < 0 ? "#ffdddd" : "#ddffdd";
+    const signo = t.amount < 0 ? "🔻" : "🔺";
+    card.style.background = color;
+    card.innerHTML = `
+      <strong>${t.date}</strong> - <b>${signo} ${t.amount}</b> (${t.category})<br>
+      ${t.cantidad || ""}<div class="acciones">
+        <button onclick="editar(${t.id})">✏️ Editar</button>
+        <button onclick="eliminar(${t.id})">🗑️ Eliminar</button>
+      </div>`;
+
+    try {
+      const imgArchivo = await dbx.filesDownload({ path: `/imagenes/tx-${t.id}.txt` });
+      const base64 = await imgArchivo.result.fileBlob.text();
+      const img = document.createElement("img");
+      img.src = `data:image/jpeg;base64,${base64}`;
+      img.onclick = () => ampliarImagen(img.src);
+      card.appendChild(img);
+    } catch {}
+
+    lista.appendChild(card);
+  });
 }
 
-function guardarImg(id, file) {
-  return new Promise(function(resolve) {
-    var reader = new FileReader();
-    reader.onload = function() {
-      var img = new Image();
-      img.onload = async function() {
-        var canvas = document.createElement('canvas');
-        var scale  = Math.min(800/img.width, 800/img.height, 1);
-        canvas.width  = img.width  * scale;
+function ampliarImagen(src) {
+  document.getElementById("img-ampliada").src = src;
+  document.getElementById("modal-img").classList.add("active");
+}
+function cerrarModal() {
+  document.getElementById("modal-img").classList.remove("active");
+}
+
+function editar(id) {
+  const t = transactions.find(tx => tx.id === id);
+  if (!t) return;
+  document.getElementById("edit-id").value = t.id;
+  document.getElementById("fecha").value = t.date;
+  document.getElementById("monto").value = Math.abs(t.amount);
+  document.getElementById("tipo-monto").value = t.amount >= 0 ? "positivo" : "negativo";
+  document.getElementById("categoria").value = t.category;
+  document.getElementById("cantidad").value = t.cantidad || "";
+  form.style.maxHeight = "800px";
+  form.style.opacity = 1;
+  toggleFormBtn.textContent = "➖ Ocultar formulario";
+}
+function cancelarEdicion() {
+  document.querySelector("form").reset();
+  document.getElementById("edit-id").value = "";
+  form.style.maxHeight = "0";
+  form.style.opacity = 0;
+  toggleFormBtn.textContent = "+ Nueva Transacción";
+}
+
+async function guardarTransaccion(event) {
+  event.preventDefault();
+  if (!dbx) return alert("Debes iniciar sesión con Dropbox");
+
+  const id = document.getElementById("edit-id").value;
+  const fecha = document.getElementById("fecha").value;
+  const monto = parseFloat(document.getElementById("monto").value);
+  const tipo = document.getElementById("tipo-monto").value;
+  const amount = tipo === "negativo" ? -Math.abs(monto) : Math.abs(monto);
+  const categoria = document.getElementById("categoria").value.trim();
+  const cantidad = document.getElementById("cantidad").value.trim();
+  const archivo = document.getElementById("imagen").files[0];
+
+  let transId = id ? parseInt(id) : (transactions.at(-1)?.id || 0) + 1;
+
+  if (id) {
+    const tx = transactions.find(t => t.id === transId);
+    Object.assign(tx, { date: fecha, amount, category: categoria, cantidad });
+  } else {
+    transactions.push({ id: transId, date: fecha, amount, category: categoria, cantidad });
+  }
+
+  await guardarEnDropbox();
+
+  if (archivo) {
+    const reader = new FileReader();
+    reader.onload = async function () {
+      const img = new Image();
+      img.onload = async function () {
+        const canvas = document.createElement("canvas");
+        let scale = Math.min(600 / img.width, 600 / img.height);
+        canvas.width = img.width * scale;
         canvas.height = img.height * scale;
-        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-        var b64 = canvas.toDataURL('image/jpeg', 0.78).split(',')[1];
-        imgCache[id] = b64;
-        try {
-          await dbx.filesUpload({
-            path: IMG_DIR + '/tx-' + id + '.txt',
-            mode: { '.tag': 'overwrite' }, contents: b64
-          });
-        } catch(e) {}
-        resolve(b64);
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const base64 = canvas.toDataURL("image/jpeg", 0.75).split(',')[1];
+
+        await dbx.filesUpload({
+          path: `/imagenes/tx-${transId}.txt`,
+          contents: base64,
+          mode: { '.tag': 'overwrite' }
+        });
+
+        mostrarTransacciones();
       };
       img.src = reader.result;
     };
-    reader.readAsDataURL(file);
-  });
-}
-
-async function cargarImg(id) {
-  if (imgCache[id]) return imgCache[id];
-  try {
-    var res = await dbx.filesDownload({ path: IMG_DIR + '/tx-' + id + '.txt' });
-    var b64 = await res.result.fileBlob.text();
-    imgCache[id] = b64;
-    return b64;
-  } catch(e) { return null; }
-}
-
-async function guardarTransaccion() {
-  var fecha = document.getElementById('f-fecha').value;
-  var tipo  = document.getElementById('f-tipo-monto').value;
-  var monto = parseFloat(document.getElementById('f-monto').value);
-  var cat   = document.getElementById('f-categoria').value.trim();
-  var desc  = document.getElementById('f-desc').value.trim();
-  var cant  = document.getElementById('f-cant').value.trim();
-  var file  = document.getElementById('f-img').files[0];
-
-  if (!fecha || isNaN(monto) || monto <= 0 || !cat) {
-    showToast('Datos incompletos', 'Fecha, monto y categoría son obligatorios.', 'danger');
-    return;
-  }
-
-  var amount  = tipo === 'exp' ? -Math.abs(monto) : Math.abs(monto);
-  var isEdit  = editingId !== null;
-  var id;
-
-  if (isEdit) {
-    id = editingId;
-    var idx = txs.findIndex(function(t) { return t.id === id; });
-    if (idx !== -1) txs[idx] = Object.assign({}, txs[idx], { date:fecha, amount:amount, category:cat, description:desc, cantidad:cant });
+    reader.readAsDataURL(archivo);
   } else {
-    id = ((txs[txs.length-1] || {}).id || 0) + 1;
-    txs.push({ id:id, date:fecha, amount:amount, category:cat, description:desc, cantidad:cant, imgcompr: !!file });
+    mostrarTransacciones();
   }
 
-  if (file) {
-    var i2 = txs.findIndex(function(t) { return t.id === id; });
-    if (i2 !== -1) txs[i2].imgcompr = true;
-    await guardarImg(id, file);
-  }
+  cancelarEdicion();
+}
 
-  closeOverlay('overlay-form');
-  renderLista();
-  updateCatFilter();
+async function guardarEnDropbox() {
+  try {
+    await dbx.filesUpload({
+      path: "/transactions.json",
+      contents: JSON.stringify({ transactions }, null, 2),
+      mode: { ".tag": "overwrite" }
+    });
+
+    const contenidoJS = "window.transactions_123 = " + JSON.stringify(transactions, null, 2) + ";";
+    await dbx.filesUpload({
+      path: "/transactions.js",
+      contents: contenidoJS,
+      mode: { ".tag": "overwrite" }
+    });
+
+    window.transactions_123 = transactions;
+  } catch (error) {
+    alert("Error al guardar en Dropbox: " + (error?.error?.error_summary || error.message));
+  }
+}
+
+async function eliminar(id) {
+  if (!confirm("¿Eliminar esta transacción?")) return;
+  transactions = transactions.filter(t => t.id !== id);
   await guardarEnDropbox();
-  showToast(isEdit ? 'Editada' : 'Guardada', cat + ' — L ' + Math.abs(amount).toLocaleString('es-HN'), 'success');
-}
 
-async function editarTx(id) {
-  var t = txs.find(function(tx) { return tx.id === id; });
-  if (!t) return;
-  editingId = id;
-  document.getElementById('form-title').textContent  = 'Editar Transacción';
-  document.getElementById('f-fecha').value           = t.date;
-  document.getElementById('f-tipo-monto').value      = t.amount >= 0 ? 'inc' : 'exp';
-  document.getElementById('f-monto').value           = Math.abs(t.amount);
-  document.getElementById('f-categoria').value       = t.category;
-  document.getElementById('f-desc').value            = t.description || '';
-  document.getElementById('f-cant').value            = t.cantidad    || '';
-  document.getElementById('f-img').value             = '';
-  var prev = document.getElementById('img-preview');
-  if (imgCache[id]) { prev.src = 'data:image/jpeg;base64,' + imgCache[id]; prev.style.display = 'block'; }
-  else prev.style.display = 'none';
-  document.getElementById('overlay-form').classList.add('open');
-}
-
-async function eliminarTx(id) {
-  var t = txs.find(function(tx) { return tx.id === id; });
-  if (!t) return;
-  if (!confirm('¿Eliminar "' + t.category + '" del ' + t.date + '?')) return;
-  txs = txs.filter(function(tx) { return tx.id !== id; });
-  try { await dbx.filesDeleteV2({ path: IMG_DIR + '/tx-' + id + '.txt' }); delete imgCache[id]; } catch(e) {}
-  renderLista();
-  updateCatFilter();
-  await guardarEnDropbox();
-  showToast('Eliminada', 'Transacción eliminada.', 'success');
-}
-
-function getFiltradas() {
-  var q    = document.getElementById('f-buscar').value.toLowerCase();
-  var cat  = document.getElementById('f-cat').value;
-  var tipo = document.getElementById('f-tipo').value;
-  var mes  = document.getElementById('f-mes').value;
-  return txs.filter(function(t) {
-    var mq = !q || (t.category||'').toLowerCase().includes(q) || (t.description||'').toLowerCase().includes(q) || t.date.includes(q) || String(Math.abs(t.amount)).includes(q);
-    var mc = !cat  || t.category === cat;
-    var mt = !tipo || (tipo==='inc' && t.amount>=0) || (tipo==='exp' && t.amount<0);
-    var mm = !mes  || t.date.startsWith(mes);
-    return mq && mc && mt && mm;
-  }).sort(function(a,b) { return b.date.localeCompare(a.date); });
-}
-
-function renderLista() {
-  var data = getFiltradas();
-  var grid = document.getElementById('tx-grid');
-  var fmtN = function(v) { return 'L ' + Number(Math.abs(v)).toLocaleString('es-HN', {minimumFractionDigits:2}); };
-  var fmtS = function(v) { return 'L ' + Number(v).toLocaleString('es-HN', {maximumFractionDigits:0}); };
-  var ing  = data.filter(function(t){return t.amount>0;}).reduce(function(s,t){return s+t.amount;},0);
-  var gas  = data.filter(function(t){return t.amount<0;}).reduce(function(s,t){return s+Math.abs(t.amount);},0);
-  document.getElementById('summary-pills').innerHTML =
-    '<div class="pill g"><span class="lbl">Ingresos</span><span class="val">'+fmtS(ing)+'</span></div>' +
-    '<div class="pill r"><span class="lbl">Gastos</span><span class="val">'+fmtS(gas)+'</span></div>' +
-    '<div class="pill o"><span class="lbl">Saldo</span><span class="val">'+fmtS(ing-gas)+'</span></div>' +
-    '<div class="pill"><span class="lbl">Registros</span><span class="val">'+data.length+'</span></div>';
-  grid.innerHTML = '';
-  if (!data.length) {
-    grid.innerHTML = '<div class="empty-state"><i class="fa-solid fa-inbox"></i><p>Sin transacciones que coincidan.</p></div>';
-    return;
+  try {
+    await dbx.filesDeleteV2({ path: `/imagenes/tx-${id}.txt` });
+  } catch (e) {
+    console.warn("Imagen ya eliminada o no encontrada");
   }
-  data.forEach(function(t, i) {
-    var p    = t.amount >= 0;
-    var card = document.createElement('div');
-    card.className = 'dbx-card ' + (p ? 'inc' : 'exp');
-    card.style.animationDelay = (i * 0.025) + 's';
-    card.innerHTML =
-      '<div class="dbx-row">' +
-        '<div><div class="dbx-amount ' + (p?'p':'n') + '">' + (p?'+':'−') + ' ' + fmtN(t.amount) + '</div>' +
-        '<div style="font-size:.7rem;color:var(--txt2);font-family:\'DM Mono\',monospace;margin-top:.15rem;">' + t.date + '</div></div>' +
-        '<div class="dbx-badge"><i class="fa-solid fa-tag" style="margin-right:.3rem;"></i>' + t.category + '</div>' +
-      '</div>' +
-      (t.description ? '<div class="dbx-desc">' + t.description + '</div>' : '') +
-      (t.cantidad    ? '<div style="font-size:.72rem;color:var(--txt3);">' + t.cantidad + '</div>' : '') +
-      '<div id="img-slot-' + t.id + '"></div>' +
-      '<div class="dbx-actions">' +
-        '<button class="dbx-btn edit" onclick="editarTx(' + t.id + ')"><i class="fa-solid fa-pen"></i> Editar</button>' +
-        '<button class="dbx-btn del"  onclick="eliminarTx(' + t.id + ')"><i class="fa-solid fa-trash"></i></button>' +
-      '</div>';
-    grid.appendChild(card);
-    if (t.imgcompr) {
-      (async function(id) {
-        var b64  = await cargarImg(id);
-        var slot = document.getElementById('img-slot-' + id);
-        if (b64 && slot) {
-          var img  = document.createElement('img');
-          img.className = 'dbx-img';
-          img.src = 'data:image/jpeg;base64,' + b64;
-          img.onclick = function() {
-            document.getElementById('lb-img').src = img.src;
-            document.getElementById('lightbox').classList.add('open');
-          };
-          slot.appendChild(img);
-        }
-      })(t.id);
-    }
+
+  mostrarTransacciones();
+}
+
+function filtrarTransacciones() {
+  const texto = document.getElementById("buscador").value.toLowerCase();
+  const categoria = document.getElementById("filtro-categoria").value;
+  const mes = document.getElementById("filtro-mes").value;
+
+  const resultado = transactions.filter(t => {
+    return (
+      (!texto || t.category.toLowerCase().includes(texto) || t.date.includes(texto) || (t.cantidad || "").toLowerCase().includes(texto)) &&
+      (!categoria || t.category === categoria) &&
+      (!mes || t.date.startsWith(mes))
+    );
   });
+
+  mostrarTransacciones(resultado);
 }
 
-function updateCatFilter() {
-  var cats = txs.map(function(t){return t.category;}).filter(function(v,i,a){return a.indexOf(v)===i;}).sort();
-  var sel  = document.getElementById('f-cat');
-  var val  = sel.value;
-  sel.innerHTML = '<option value="">Todas las categorías</option>' + cats.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('');
-  if (cats.indexOf(val) !== -1) sel.value = val;
-  document.getElementById('cats-list').innerHTML = cats.map(function(c){return '<option value="'+c+'">';}).join('');
-}
-
-function abrirFormulario() {
-  editingId = null;
-  document.getElementById('form-title').textContent = 'Nueva Transacción';
-  document.getElementById('f-fecha').value          = new Date().toISOString().slice(0,10);
-  document.getElementById('f-tipo-monto').value     = 'exp';
-  ['f-monto','f-categoria','f-desc','f-cant'].forEach(function(id){ document.getElementById(id).value=''; });
-  document.getElementById('f-img').value            = '';
-  document.getElementById('img-preview').style.display = 'none';
-  document.getElementById('overlay-form').classList.add('open');
-}
-
-function previewImg(input) {
-  var file = input.files[0];
-  var prev = document.getElementById('img-preview');
-  if (file) {
-    var r = new FileReader();
-    r.onload = function(e) { prev.src = e.target.result; prev.style.display = 'block'; };
-    r.readAsDataURL(file);
-  } else { prev.style.display = 'none'; }
-}
-
-function closeOverlay(id) { document.getElementById(id).classList.remove('open'); }
-document.addEventListener('click', function(e) { if (e.target.classList.contains('overlay')) e.target.classList.remove('open'); });
-document.addEventListener('keydown', function(e) { if (e.key==='Escape') document.querySelectorAll('.overlay.open').forEach(function(o){o.classList.remove('open');}); });
-
-function showToast(title, msg, type, dur) {
-  type = type || 'info'; dur = dur || 4000;
-  var icons = { success:'✅', warning:'⚠️', danger:'🚨', info:'ℹ️' };
-  var t = document.createElement('div');
-  t.className = 'toast ' + type;
-  t.innerHTML = '<span>' + (icons[type]||'ℹ️') + '</span><div><div class="toast-title">' + title + '</div><div class="toast-msg">' + msg + '</div></div>';
-  t.onclick = function() { t.classList.add('toast-out'); setTimeout(function(){t.remove();},220); };
-  document.getElementById('toasts').appendChild(t);
-  setTimeout(function() { t.classList.add('toast-out'); setTimeout(function(){t.remove();},220); }, dur);
-}
-</script>
-</body>
+</script> 
+ </body>
 </html>
