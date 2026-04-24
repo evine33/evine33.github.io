@@ -300,19 +300,38 @@ window.onload = async () => {
   connectBtn.onclick = iniciarSesion;
   document.body.insertBefore(connectBtn, toggleFormBtn);
 
+  // 1. Intentar sacar el token de la URL (después del login)
   const params = new URLSearchParams(window.location.hash.substring(1));
-  const token = params.get("access_token");
+  let token = params.get("access_token");
+
+  // 2. Si no está en la URL, buscarlo en la "memoria" del navegador (localStorage)
+  if (!token) {
+    token = localStorage.getItem("dbx_token");
+  } else {
+    // Si lo acabamos de recibir, lo guardamos para la próxima vez
+    localStorage.setItem("dbx_token", token);
+    // Limpiamos la URL para que se vea bonita
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
   if (token) {
     dbx = new Dropbox.Dropbox({ accessToken: token });
-    connectBtn.remove();
-
-    toggleFormBtn.style.display = "block";
-    filtros.style.display = "flex";
-    transacciones.style.display = "block";
-
-    await cargarTransacciones();
+    
+    // Verificamos si el token sirve (si no ha expirado)
+    try {
+      await dbx.usersGetCurrentAccount();
+      connectBtn.remove(); // Solo quitamos el botón si la conexión es real
+      toggleFormBtn.style.display = "block";
+      filtros.style.display = "flex";
+      transacciones.style.display = "block";
+      await cargarTransacciones();
+    } catch (e) {
+      console.log("El token ya no sirve, hay que conectar de nuevo.");
+      localStorage.removeItem("dbx_token");
+    }
   }
 };
+
 
 async function cargarTransacciones() {
   showSpinner(true);
