@@ -130,16 +130,6 @@ img{max-width:100%;height:auto;}
 .report-date{font-size:.68rem;color:var(--txt2);font-family:'DM Mono',monospace;}
 .report-btns{display:flex;gap:.35rem;flex-shrink:0;}
 .report-btn{background:var(--bg);border:1px solid var(--border);color:var(--txt2);border-radius:var(--rs);padding:.35rem .55rem;cursor:pointer;font-size:.72rem;min-height:30px;display:flex;align-items:center;}
-/* SELECCIÓN MÚLTIPLE */
-.tx-check{width:24px;height:24px;border-radius:7px;border:1.5px solid var(--border);background:var(--bg);color:transparent;display:flex;align-items:center;justify-content:center;font-size:.7rem;cursor:pointer;flex-shrink:0;margin-top:.1rem;transition:all .15s;padding:0;}
-.tx-check.on{background:var(--gold);border-color:var(--gold);color:#0a0c10;}
-.dbx-card.sel{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold-d) inset;}
-#sel-bar{position:fixed;left:.75rem;right:.75rem;bottom:calc(80px + var(--safe-b));z-index:120;background:var(--card2);border:1px solid rgba(201,168,76,.35);border-radius:14px;padding:.75rem .85rem;display:none;flex-direction:column;gap:.55rem;box-shadow:0 14px 44px rgba(0,0,0,.6);animation:fadeUp .2s ease both;}
-#sel-bar.show{display:flex;}
-#sel-count{font-size:.78rem;color:var(--txt);font-family:'DM Mono',monospace;}
-#sel-neto{font-size:1rem;color:var(--gold-l);font-family:'DM Mono',monospace;font-weight:500;}
-#sel-breakdown{font-size:.68rem;color:var(--txt2);font-family:'DM Mono',monospace;}
-#sel-bar .btn-gold{padding:.65rem 1rem;min-height:42px;text-transform:none;letter-spacing:0;}
 </style> 
  </head> 
  <body> 
@@ -262,7 +252,7 @@ img{max-width:100%;height:auto;}
      <i class="fa-solid fa-file-arrow-down" style="color:var(--gold);margin-right:.4rem;" aria-hidden="true"></i>Exportar Datos
     </div> 
     <!-- Filtros --> 
-    <div class="exp-filters" id="exp-filters-block"> 
+    <div class="exp-filters"> 
      <div style="display:flex;gap:.6rem;flex-wrap:wrap;"> 
       <label style="flex:1;min-width:130px;">Desde: <input type="date" id="exp-from" oninput="updateExpPreview()"></label> 
       <label style="flex:1;min-width:130px;">Hasta: <input type="date" id="exp-to" oninput="updateExpPreview()"></label> 
@@ -349,17 +339,6 @@ img{max-width:100%;height:auto;}
   <div id="lightbox" onclick="document.getElementById('lightbox').classList.remove('open')"> 
    <img id="lb-img" src="" alt=""> 
   </div> 
-  <div id="sel-bar"> 
-   <div style="display:flex;justify-content:space-between;align-items:baseline;gap:.5rem;"> 
-    <span id="sel-count"></span> 
-    <span id="sel-neto"></span> 
-   </div> 
-   <div id="sel-breakdown"></div> 
-   <div style="display:flex;gap:.5rem;"> 
-    <button class="btn-secondary" onclick="clearSelection()" style="flex:1;justify-content:center;"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Limpiar</button> 
-    <button class="btn-gold" onclick="exportSeleccion()" style="flex:1;width:auto;justify-content:center;"><i class="fa-solid fa-file-arrow-down" aria-hidden="true"></i> Exportar</button> 
-   </div> 
-  </div> 
   <div id="toasts"></div> 
   <script>
 const APP_KEY   = 'k5t6sterc4j91oq';
@@ -369,7 +348,6 @@ const JS_PATH   = '/transactions.js';
 const IMG_DIR   = '/imagenes';
 
 let dbx = null, txs = [], editingId = null, imgCache = {};
-var selected = {}, expUseSelection = false;
 
 window.addEventListener('load', async function() {
   var hash = new URLSearchParams(window.location.hash.substring(1));
@@ -566,7 +544,6 @@ async function eliminarTx(id) {
   if (!t) return;
   if (!confirm('¿Eliminar "' + t.category + '" del ' + t.date + '?')) return;
   txs = txs.filter(function(tx) { return tx.id !== id; });
-  delete selected[id];
   try { await dbx.filesDeleteV2({ path: IMG_DIR + '/tx-' + id + '.txt' }); delete imgCache[id]; } catch(e) {}
   renderLista();
   updateCatFilter();
@@ -607,18 +584,13 @@ function renderLista() {
   }
   data.forEach(function(t, i) {
     var p    = t.amount >= 0;
-    var isSel = !!selected[t.id];
     var card = document.createElement('div');
-    card.id = 'tx-card-' + t.id;
-    card.className = 'dbx-card ' + (p ? 'inc' : 'exp') + (isSel ? ' sel' : '');
+    card.className = 'dbx-card ' + (p ? 'inc' : 'exp');
     card.style.animationDelay = (i * 0.025) + 's';
     card.innerHTML =
       '<div class="dbx-row">' +
-        '<div style="display:flex;align-items:flex-start;gap:.55rem;min-width:0;">' +
-          '<button id="tx-chk-' + t.id + '" class="tx-check' + (isSel?' on':'') + '" onclick="toggleSelect(' + t.id + ')" aria-label="Seleccionar"><i class="fa-solid fa-check"></i></button>' +
-          '<div><div class="dbx-amount ' + (p?'p':'n') + '">' + (p?'+':'−') + ' ' + fmtN(t.amount) + '</div>' +
-          '<div style="font-size:.7rem;color:var(--txt2);font-family:\'DM Mono\',monospace;margin-top:.15rem;">' + t.date + '</div></div>' +
-        '</div>' +
+        '<div><div class="dbx-amount ' + (p?'p':'n') + '">' + (p?'+':'−') + ' ' + fmtN(t.amount) + '</div>' +
+        '<div style="font-size:.7rem;color:var(--txt2);font-family:\'DM Mono\',monospace;margin-top:.15rem;">' + t.date + '</div></div>' +
         '<div class="dbx-badge"><i class="fa-solid fa-tag" style="margin-right:.3rem;"></i>' + t.category + '</div>' +
       '</div>' +
       (t.description ? '<div class="dbx-desc">' + t.description + '</div>' : '') +
@@ -646,50 +618,6 @@ function renderLista() {
       })(t.id);
     }
   });
-  updateSelBar();
-}
-
-/* ════ SELECCIÓN MÚLTIPLE ════ */
-function toggleSelect(id) {
-  if (selected[id]) delete selected[id]; else selected[id] = true;
-  var card = document.getElementById('tx-card-' + id);
-  var chk  = document.getElementById('tx-chk-' + id);
-  if (card) { if (selected[id]) card.classList.add('sel'); else card.classList.remove('sel'); }
-  if (chk)  { if (selected[id]) chk.classList.add('on');   else chk.classList.remove('on'); }
-  updateSelBar();
-}
-
-function updateSelBar() {
-  var bar = document.getElementById('sel-bar');
-  var sel = txs.filter(function(t) { return selected[t.id]; });
-  if (!sel.length) { bar.classList.remove('show'); return; }
-  var fmt = function(v) { return 'L ' + Number(v).toLocaleString('es-HN', {maximumFractionDigits:0}); };
-  var ing = sel.filter(function(t){return t.amount>0;}).reduce(function(s,t){return s+t.amount;},0);
-  var gas = sel.filter(function(t){return t.amount<0;}).reduce(function(s,t){return s+Math.abs(t.amount);},0);
-  document.getElementById('sel-count').textContent     = sel.length + ' seleccionada' + (sel.length>1?'s':'');
-  document.getElementById('sel-neto').textContent      = 'Neto ' + fmt(ing-gas);
-  document.getElementById('sel-breakdown').textContent = 'Ingresos ' + fmt(ing) + '  ·  Gastos ' + fmt(gas);
-  bar.classList.add('show');
-}
-
-function clearSelection() {
-  selected = {};
-  var checks = document.querySelectorAll('.tx-check.on');
-  for (var i=0;i<checks.length;i++) checks[i].classList.remove('on');
-  var cards = document.querySelectorAll('.dbx-card.sel');
-  for (var j=0;j<cards.length;j++) cards[j].classList.remove('sel');
-  updateSelBar();
-}
-
-function exportSeleccion() {
-  if (!Object.keys(selected).length) {
-    showToast('Nada seleccionado', 'Tocá el cuadro de una o más transacciones.', 'warning');
-    return;
-  }
-  expUseSelection = true;
-  document.getElementById('exp-filters-block').style.display = 'none';
-  updateExpPreview();
-  document.getElementById('overlay-export').classList.add('open');
 }
 
 function updateCatFilter() {
@@ -741,10 +669,6 @@ function showToast(title, msg, type, dur) {
 var REPORTES_DIR = '/reportes';
 
 function getExpData() {
-  if (expUseSelection) {
-    return txs.filter(function(t){ return selected[t.id]; })
-              .sort(function(a,b){ return a.date.localeCompare(b.date); });
-  }
   var from = document.getElementById('exp-from').value;
   var to   = document.getElementById('exp-to').value;
   var cat  = document.getElementById('exp-cat').value;
@@ -759,7 +683,7 @@ function updateExpPreview() {
   var data  = getExpData();
   var total = data.reduce(function(s,t){ return s + t.amount; }, 0);
   document.getElementById('exp-preview-count').textContent =
-    (expUseSelection ? 'Seleccionadas: ' : '') + data.length + ' transacciones · L ' + Number(total).toLocaleString('es-HN');
+    data.length + ' transacciones · L ' + Number(total).toLocaleString('es-HN');
 }
 
 function populateExpCat() {
@@ -773,8 +697,6 @@ function populateExpCat() {
 }
 
 function openExport() {
-  expUseSelection = false;
-  document.getElementById('exp-filters-block').style.display = '';
   populateExpCat();
   updateExpPreview();
   document.getElementById('overlay-export').classList.add('open');
