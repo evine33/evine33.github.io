@@ -1,15 +1,11 @@
-<!DOCTYPE html>
 <html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<title>₲ Gestión</title>
-<script src="https://unpkg.com/dropbox/dist/Dropbox-sdk.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-<script src="https://kit.fontawesome.com/32ac7cd722.js" crossorigin="anonymous"></script>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Mono:wght@300;400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-<style>
+ <head> 
+  <meta charset="UTF-8"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"> 
+  <meta name="apple-mobile-web-app-capable" content="yes"> 
+  <title>₲ Gestión</title> 
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&amp;family=DM+Mono:wght@300;400;500&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"> 
+  <style>
 :root{--bg:#0a0c10;--card:#111318;--card2:#161a22;--border:#1e2330;--gold:#c9a84c;--gold-l:#e8c96a;--gold-d:rgba(201,168,76,.13);--green:#2ecc8a;--red:#e05c5c;--blue:#4a90d9;--txt:#eef0f5;--txt2:#7a8296;--txt3:#3d4457;--r:14px;--rs:10px;--safe-b:env(safe-area-inset-bottom,0px);--safe-t:env(safe-area-inset-top,0px);}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 *{max-width:100%;}
@@ -134,187 +130,238 @@ img{max-width:100%;height:auto;}
 .report-date{font-size:.68rem;color:var(--txt2);font-family:'DM Mono',monospace;}
 .report-btns{display:flex;gap:.35rem;flex-shrink:0;}
 .report-btn{background:var(--bg);border:1px solid var(--border);color:var(--txt2);border-radius:var(--rs);padding:.35rem .55rem;cursor:pointer;font-size:.72rem;min-height:30px;display:flex;align-items:center;}
-</style>
-</head>
-<body>
-<div class="bg-grid"></div>
-<div class="bg-glow"></div>
-<div id="loading-overlay"><div class="spin"></div><p>Conectando…</p></div>
-
-<div id="topbar">
-  <a href="index.html" class="topbar-back"><i class="fa-solid fa-arrow-left"></i></a>
-  <div class="topbar-title">Gestión Dropbox</div>
-  <div id="sync-row"><div class="spin"></div></div>
-  <div id="dbx-status"><i class="fa-brands fa-dropbox"></i> <span id="dbx-txt">Desconectado</span></div>
-</div>
-
-<div id="connect-screen">
-  <div class="connect-box">
-    <div class="connect-icon">☁️</div>
-    <div class="connect-title">Conectar Dropbox</div>
-    <p class="connect-desc">Conecta tu Dropbox para guardar y sincronizar transacciones en la nube.</p>
-    <ul class="feature-list">
-      <li><i class="fa-solid fa-plus"></i> Agregar transacciones</li>
-      <li><i class="fa-solid fa-pen"></i> Editar y eliminar</li>
-      <li><i class="fa-solid fa-image"></i> Guardar comprobantes</li>
-      <li><i class="fa-solid fa-rotate"></i> Sincronización automática</li>
-    </ul>
-    <button class="btn-gold" onclick="conectarDropbox()"><i class="fa-brands fa-dropbox"></i> Conectar con Dropbox</button>
-  </div>
-</div>
-
-<div id="main-app">
-  <div class="section-pad">
-    <div style="display:flex;flex-direction:column;gap:.6rem;">
-      <input type="text" id="f-buscar" placeholder="Buscar…" oninput="renderLista()" class="f-input">
-      <div style="display:flex;gap:.6rem;">
-        <select id="f-cat" onchange="renderLista()" class="f-input" style="flex:1;"></select>
-        <select id="f-tipo" onchange="renderLista()" class="f-input" style="flex:1;">
-          <option value="">Todos</option>
-          <option value="inc">Ingresos</option>
-          <option value="exp">Gastos</option>
-        </select>
-      </div>
-      <input type="month" id="f-mes" onchange="renderLista()" class="f-input">
-    </div>
-    <div class="pills-row" id="summary-pills"></div>
-    <div class="dbx-grid" id="tx-grid">
-      <div class="empty-state"><i class="fa-solid fa-inbox"></i><p>Sin transacciones aún.</p></div>
-    </div>
-    <div style="display:flex;gap:.6rem;">
-      <button class="btn-secondary" onclick="openExport()" style="flex:1;justify-content:center;">
-        <i class="fa-solid fa-file-arrow-down"></i> Exportar
-      </button>
-      <button class="btn-secondary" onclick="openReportes()" style="flex:1;justify-content:center;">
-        <i class="fa-brands fa-dropbox"></i> Reportes
-      </button>
-    </div>
-    <button class="btn-secondary" onclick="desconectarDropbox()" style="width:100%;justify-content:center;">
-      <i class="fa-solid fa-right-from-bracket"></i> Desconectar
-    </button>
-  </div>
-</div>
-
-<button id="fab" onclick="abrirFormulario()"><i class="fa-solid fa-plus"></i></button>
-
-<div class="overlay" id="overlay-form">
-  <div class="sheet">
-    <div class="sheet-handle"></div>
-    <button class="close-x" onclick="closeOverlay('overlay-form')">✕</button>
-    <div class="sheet-title" id="form-title">Nueva Transacción</div>
-    <div class="form-row">
-      <div class="field"><label>Fecha</label><input type="date" id="f-fecha"></div>
-      <div class="field"><label>Tipo</label>
-        <select id="f-tipo-monto"><option value="inc">Ingreso</option><option value="exp">Gasto</option></select>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="field"><label>Monto (L)</label><input type="number" id="f-monto" placeholder="0.00" min="0" step="0.01"></div>
-      <div class="field"><label>Categoría</label><input type="text" id="f-categoria" placeholder="Ej: Comida" list="cats-list"><datalist id="cats-list"></datalist></div>
-    </div>
-    <div class="field"><label>Descripción <span style="color:var(--txt3)">(opcional)</span></label><textarea id="f-desc" placeholder="Detalle…"></textarea></div>
-    <div class="field"><label>Referencia <span style="color:var(--txt3)">(opcional)</span></label><input type="text" id="f-cant" placeholder="Ej: Factura #123"></div>
-    <div class="field"><label>Comprobante <span style="color:var(--txt3)">(opcional)</span></label>
-      <input type="file" id="f-img" accept="image/*" onchange="previewImg(this)">
-      <img id="img-preview" src="" alt="">
-    </div>
-    <div class="btn-row">
-      <button class="btn-secondary" onclick="closeOverlay('overlay-form')">Cancelar</button>
-      <button class="btn-gold" onclick="guardarTransaccion()" style="width:auto;justify-content:center;"><i class="fa-solid fa-floppy-disk"></i> Guardar</button>
-    </div>
-    <input type="hidden" id="f-edit-id">
-  </div>
-</div>
-
-<!-- MODAL: EXPORTAR -->
-<div class="overlay" id="overlay-export">
-  <div class="sheet">
-    <div class="sheet-handle"></div>
-    <button class="close-x" onclick="closeOverlay('overlay-export')">✕</button>
-    <div class="sheet-title"><i class="fa-solid fa-file-arrow-down" style="color:var(--gold);margin-right:.4rem;"></i>Exportar Datos</div>
-
-    <!-- Filtros -->
-    <div class="exp-filters">
-      <div style="display:flex;gap:.6rem;flex-wrap:wrap;">
-        <label style="flex:1;min-width:130px;">Desde: <input type="date" id="exp-from" oninput="updateExpPreview()"></label>
-        <label style="flex:1;min-width:130px;">Hasta: <input type="date" id="exp-to" oninput="updateExpPreview()"></label>
-      </div>
-      <select id="exp-cat" onchange="updateExpPreview()" class="f-input"></select>
-    </div>
-    <div id="exp-preview-count"></div>
-
-    <!-- Opciones -->
-    <div class="export-section">
-
-      <div class="exp-card">
-        <i class="fa-solid fa-table"></i>
-        <div class="exp-name">Excel</div>
-        <div class="exp-desc">2 hojas: transacciones + resumen mensual</div>
-        <div class="exp-card-btns">
-          <button onclick="exportExcel(false)"><i class="fa-solid fa-download"></i> Bajar</button>
-          <button class="dbx-save" onclick="exportExcel(true)"><i class="fa-brands fa-dropbox"></i> Dropbox</button>
-        </div>
-      </div>
-
-      <div class="exp-card">
-        <i class="fa-solid fa-file-csv"></i>
-        <div class="exp-name">CSV</div>
-        <div class="exp-desc">Compatible con cualquier app de hojas</div>
-        <div class="exp-card-btns">
-          <button onclick="exportCSV(false)"><i class="fa-solid fa-download"></i> Bajar</button>
-          <button class="dbx-save" onclick="exportCSV(true)"><i class="fa-brands fa-dropbox"></i> Dropbox</button>
-        </div>
-      </div>
-
-      <div class="exp-card">
-        <i class="fa-solid fa-file-pdf"></i>
-        <div class="exp-name">PDF</div>
-        <div class="exp-desc">Reporte visual listo para imprimir</div>
-        <div class="exp-card-btns">
-          <button onclick="exportPDF(false)"><i class="fa-solid fa-download"></i> Bajar</button>
-          <button class="dbx-save" onclick="exportPDF(true)"><i class="fa-brands fa-dropbox"></i> Dropbox</button>
-        </div>
-      </div>
-
-      <div class="exp-card">
-        <i class="fa-solid fa-code"></i>
-        <div class="exp-name">JSON</div>
-        <div class="exp-desc">Backup completo para respaldo</div>
-        <div class="exp-card-btns">
-          <button onclick="exportJSON(false)"><i class="fa-solid fa-download"></i> Bajar</button>
-          <button class="dbx-save" onclick="exportJSON(true)"><i class="fa-brands fa-dropbox"></i> Dropbox</button>
-        </div>
-      </div>
-
-    </div>
-    <p style="color:var(--txt3);font-size:.7rem;text-align:center;">
-      <i class="fa-brands fa-dropbox"></i> Los archivos se guardan en <b style="color:var(--txt2);">/reportes/</b> en tu Dropbox
-    </p>
-  </div>
-</div>
-
-<!-- MODAL: REPORTES GUARDADOS EN DROPBOX -->
-<div class="overlay" id="overlay-reportes">
-  <div class="sheet">
-    <div class="sheet-handle"></div>
-    <button class="close-x" onclick="closeOverlay('overlay-reportes')">✕</button>
-    <div class="sheet-title"><i class="fa-brands fa-dropbox" style="color:var(--gold);margin-right:.4rem;"></i>Reportes en Dropbox</div>
-    <p style="color:var(--txt2);font-size:.8rem;">Archivos guardados en <b>/reportes/</b> en tu Dropbox.</p>
-    <div id="reportes-list" style="display:flex;flex-direction:column;gap:.5rem;">
-      <div class="empty-state" style="padding:2rem 0;"><i class="fa-solid fa-folder-open"></i><p>Cargando…</p></div>
-    </div>
-    <button class="btn-secondary" onclick="cargarReportes()" style="width:100%;justify-content:center;">
-      <i class="fa-solid fa-rotate"></i> Actualizar lista
-    </button>
-  </div>
-</div>
-
-<div id="lightbox" onclick="document.getElementById('lightbox').classList.remove('open')">
-  <img id="lb-img" src="" alt="">
-</div>
-<div id="toasts"></div>
-
-<script>
+/* SELECCIÓN MÚLTIPLE */
+.tx-check{width:24px;height:24px;border-radius:7px;border:1.5px solid var(--border);background:var(--bg);color:transparent;display:flex;align-items:center;justify-content:center;font-size:.7rem;cursor:pointer;flex-shrink:0;margin-top:.1rem;transition:all .15s;padding:0;}
+.tx-check.on{background:var(--gold);border-color:var(--gold);color:#0a0c10;}
+.dbx-card.sel{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold-d) inset;}
+#sel-bar{position:fixed;left:.75rem;right:.75rem;bottom:calc(80px + var(--safe-b));z-index:120;background:var(--card2);border:1px solid rgba(201,168,76,.35);border-radius:14px;padding:.75rem .85rem;display:none;flex-direction:column;gap:.55rem;box-shadow:0 14px 44px rgba(0,0,0,.6);animation:fadeUp .2s ease both;}
+#sel-bar.show{display:flex;}
+#sel-count{font-size:.78rem;color:var(--txt);font-family:'DM Mono',monospace;}
+#sel-neto{font-size:1rem;color:var(--gold-l);font-family:'DM Mono',monospace;font-weight:500;}
+#sel-breakdown{font-size:.68rem;color:var(--txt2);font-family:'DM Mono',monospace;}
+#sel-bar .btn-gold{padding:.65rem 1rem;min-height:42px;text-transform:none;letter-spacing:0;}
+</style> 
+ </head> 
+ <body> 
+  <div class="bg-grid"></div> 
+  <div class="bg-glow"></div> 
+  <div id="loading-overlay" class="hide">
+   <div class="spin"></div>
+   <p>Conectando…</p>
+  </div> 
+  <div id="topbar"> 
+   <a href="index.html" class="topbar-back"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i></a> 
+   <div class="topbar-title">
+    Gestión Dropbox
+   </div> 
+   <div id="sync-row">
+    <div class="spin"></div>
+   </div> 
+   <div id="dbx-status">
+    <i class="fa-brands fa-dropbox" aria-hidden="true"></i> 
+    <span id="dbx-txt">Desconectado</span>
+   </div> 
+  </div> 
+  <div id="connect-screen"> 
+   <div class="connect-box"> 
+    <div class="connect-icon">
+     ☁️
+    </div> 
+    <div class="connect-title">
+     Conectar Dropbox
+    </div> 
+    <p class="connect-desc">Conecta tu Dropbox para guardar y sincronizar transacciones en la nube.</p> 
+    <ul class="feature-list"> 
+     <li><i class="fa-solid fa-plus" aria-hidden="true"></i> Agregar transacciones</li> 
+     <li><i class="fa-solid fa-pen" aria-hidden="true"></i> Editar y eliminar</li> 
+     <li><i class="fa-solid fa-image" aria-hidden="true"></i> Guardar comprobantes</li> 
+     <li><i class="fa-solid fa-rotate" aria-hidden="true"></i> Sincronización automática</li> 
+    </ul> 
+    <button class="btn-gold" onclick="conectarDropbox()"><i class="fa-brands fa-dropbox" aria-hidden="true"></i> Conectar con Dropbox</button> 
+   </div> 
+  </div> 
+  <div id="main-app"> 
+   <div class="section-pad"> 
+    <div style="display:flex;flex-direction:column;gap:.6rem;"> 
+     <input type="text" id="f-buscar" placeholder="Buscar…" oninput="renderLista()" class="f-input"> 
+     <div style="display:flex;gap:.6rem;"> 
+      <select id="f-cat" onchange="renderLista()" class="f-input" style="flex:1;"></select> 
+      <select id="f-tipo" onchange="renderLista()" class="f-input" style="flex:1;"> <option value="">Todos</option> <option value="inc">Ingresos</option> <option value="exp">Gastos</option> </select> 
+     </div> 
+     <input type="month" id="f-mes" onchange="renderLista()" class="f-input"> 
+    </div> 
+    <div class="pills-row" id="summary-pills"></div> 
+    <div class="dbx-grid" id="tx-grid"> 
+     <div class="empty-state">
+      <i class="fa-solid fa-inbox" aria-hidden="true"></i>
+      <p>Sin transacciones aún.</p>
+     </div> 
+    </div> 
+    <div style="display:flex;gap:.6rem;"> 
+     <button class="btn-secondary" onclick="openExport()" style="flex:1;justify-content:center;"> <i class="fa-solid fa-file-arrow-down" aria-hidden="true"></i> Exportar </button> 
+     <button class="btn-secondary" onclick="openReportes()" style="flex:1;justify-content:center;"> <i class="fa-brands fa-dropbox" aria-hidden="true"></i> Reportes </button> 
+    </div> 
+    <button class="btn-secondary" onclick="desconectarDropbox()" style="width:100%;justify-content:center;"> <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i> Desconectar </button> 
+   </div> 
+  </div> 
+  <button id="fab" onclick="abrirFormulario()"><i class="fa-solid fa-plus" aria-hidden="true"></i></button> 
+  <div class="overlay" id="overlay-form"> 
+   <div class="sheet"> 
+    <div class="sheet-handle"></div> 
+    <button class="close-x" onclick="closeOverlay('overlay-form')">✕</button> 
+    <div class="sheet-title" id="form-title">
+     Nueva Transacción
+    </div> 
+    <div class="form-row"> 
+     <div class="field">
+      <label>Fecha</label>
+      <input type="date" id="f-fecha">
+     </div> 
+     <div class="field">
+      <label>Tipo</label> 
+      <select id="f-tipo-monto"><option value="inc">Ingreso</option><option value="exp">Gasto</option></select> 
+     </div> 
+    </div> 
+    <div class="form-row"> 
+     <div class="field">
+      <label>Monto (L)</label>
+      <input type="number" id="f-monto" placeholder="0.00" min="0" step="0.01">
+     </div> 
+     <div class="field">
+      <label>Categoría</label>
+      <input type="text" id="f-categoria" placeholder="Ej: Comida" list="cats-list">
+      <datalist id="cats-list"></datalist>
+     </div> 
+    </div> 
+    <div class="field">
+     <label>Descripción <span style="color:var(--txt3)">(opcional)</span></label>
+     <textarea id="f-desc" placeholder="Detalle…"></textarea>
+    </div> 
+    <div class="field">
+     <label>Referencia <span style="color:var(--txt3)">(opcional)</span></label>
+     <input type="text" id="f-cant" placeholder="Ej: Factura #123">
+    </div> 
+    <div class="field">
+     <label>Comprobante <span style="color:var(--txt3)">(opcional)</span></label> 
+     <input type="file" id="f-img" accept="image/*" onchange="previewImg(this)"> 
+     <img id="img-preview" src="" alt=""> 
+    </div> 
+    <div class="btn-row"> 
+     <button class="btn-secondary" onclick="closeOverlay('overlay-form')">Cancelar</button> 
+     <button class="btn-gold" onclick="guardarTransaccion()" style="width:auto;justify-content:center;"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Guardar</button> 
+    </div> 
+    <input type="hidden" id="f-edit-id"> 
+   </div> 
+  </div> 
+  <!-- MODAL: EXPORTAR --> 
+  <div class="overlay" id="overlay-export"> 
+   <div class="sheet"> 
+    <div class="sheet-handle"></div> 
+    <button class="close-x" onclick="closeOverlay('overlay-export')">✕</button> 
+    <div class="sheet-title">
+     <i class="fa-solid fa-file-arrow-down" style="color:var(--gold);margin-right:.4rem;" aria-hidden="true"></i>Exportar Datos
+    </div> 
+    <!-- Filtros --> 
+    <div class="exp-filters" id="exp-filters-block"> 
+     <div style="display:flex;gap:.6rem;flex-wrap:wrap;"> 
+      <label style="flex:1;min-width:130px;">Desde: <input type="date" id="exp-from" oninput="updateExpPreview()"></label> 
+      <label style="flex:1;min-width:130px;">Hasta: <input type="date" id="exp-to" oninput="updateExpPreview()"></label> 
+     </div> 
+     <select id="exp-cat" onchange="updateExpPreview()" class="f-input"></select> 
+    </div> 
+    <div id="exp-preview-count"></div> 
+    <!-- Opciones --> 
+    <div class="export-section"> 
+     <div class="exp-card"> 
+      <i class="fa-solid fa-table" aria-hidden="true"></i> 
+      <div class="exp-name">
+       Excel
+      </div> 
+      <div class="exp-desc">
+       2 hojas: transacciones + resumen mensual
+      </div> 
+      <div class="exp-card-btns"> 
+       <button onclick="exportExcel(false)"><i class="fa-solid fa-download" aria-hidden="true"></i> Bajar</button> 
+       <button class="dbx-save" onclick="exportExcel(true)"><i class="fa-brands fa-dropbox" aria-hidden="true"></i> Dropbox</button> 
+      </div> 
+     </div> 
+     <div class="exp-card"> 
+      <i class="fa-solid fa-file-csv" aria-hidden="true"></i> 
+      <div class="exp-name">
+       CSV
+      </div> 
+      <div class="exp-desc">
+       Compatible con cualquier app de hojas
+      </div> 
+      <div class="exp-card-btns"> 
+       <button onclick="exportCSV(false)"><i class="fa-solid fa-download" aria-hidden="true"></i> Bajar</button> 
+       <button class="dbx-save" onclick="exportCSV(true)"><i class="fa-brands fa-dropbox" aria-hidden="true"></i> Dropbox</button> 
+      </div> 
+     </div> 
+     <div class="exp-card"> 
+      <i class="fa-solid fa-file-pdf" aria-hidden="true"></i> 
+      <div class="exp-name">
+       PDF
+      </div> 
+      <div class="exp-desc">
+       Reporte visual listo para imprimir
+      </div> 
+      <div class="exp-card-btns"> 
+       <button onclick="exportPDF(false)"><i class="fa-solid fa-download" aria-hidden="true"></i> Bajar</button> 
+       <button class="dbx-save" onclick="exportPDF(true)"><i class="fa-brands fa-dropbox" aria-hidden="true"></i> Dropbox</button> 
+      </div> 
+     </div> 
+     <div class="exp-card"> 
+      <i class="fa-solid fa-code" aria-hidden="true"></i> 
+      <div class="exp-name">
+       JSON
+      </div> 
+      <div class="exp-desc">
+       Backup completo para respaldo
+      </div> 
+      <div class="exp-card-btns"> 
+       <button onclick="exportJSON(false)"><i class="fa-solid fa-download" aria-hidden="true"></i> Bajar</button> 
+       <button class="dbx-save" onclick="exportJSON(true)"><i class="fa-brands fa-dropbox" aria-hidden="true"></i> Dropbox</button> 
+      </div> 
+     </div> 
+    </div> 
+    <p style="color:var(--txt3);font-size:.7rem;text-align:center;"> <i class="fa-brands fa-dropbox" aria-hidden="true"></i> Los archivos se guardan en <b style="color:var(--txt2);">/reportes/</b> en tu Dropbox </p> 
+   </div> 
+  </div> 
+  <!-- MODAL: REPORTES GUARDADOS EN DROPBOX --> 
+  <div class="overlay" id="overlay-reportes"> 
+   <div class="sheet"> 
+    <div class="sheet-handle"></div> 
+    <button class="close-x" onclick="closeOverlay('overlay-reportes')">✕</button> 
+    <div class="sheet-title">
+     <i class="fa-brands fa-dropbox" style="color:var(--gold);margin-right:.4rem;" aria-hidden="true"></i>Reportes en Dropbox
+    </div> 
+    <p style="color:var(--txt2);font-size:.8rem;">Archivos guardados en <b>/reportes/</b> en tu Dropbox.</p> 
+    <div id="reportes-list" style="display:flex;flex-direction:column;gap:.5rem;"> 
+     <div class="empty-state" style="padding:2rem 0;">
+      <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
+      <p>Cargando…</p>
+     </div> 
+    </div> 
+    <button class="btn-secondary" onclick="cargarReportes()" style="width:100%;justify-content:center;"> <i class="fa-solid fa-rotate" aria-hidden="true"></i> Actualizar lista </button> 
+   </div> 
+  </div> 
+  <div id="lightbox" onclick="document.getElementById('lightbox').classList.remove('open')"> 
+   <img id="lb-img" src="" alt=""> 
+  </div> 
+  <div id="sel-bar"> 
+   <div style="display:flex;justify-content:space-between;align-items:baseline;gap:.5rem;"> 
+    <span id="sel-count"></span> 
+    <span id="sel-neto"></span> 
+   </div> 
+   <div id="sel-breakdown"></div> 
+   <div style="display:flex;gap:.5rem;"> 
+    <button class="btn-secondary" onclick="clearSelection()" style="flex:1;justify-content:center;"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Limpiar</button> 
+    <button class="btn-gold" onclick="exportSeleccion()" style="flex:1;width:auto;justify-content:center;"><i class="fa-solid fa-file-arrow-down" aria-hidden="true"></i> Exportar</button> 
+   </div> 
+  </div> 
+  <div id="toasts"></div> 
+  <script>
 const APP_KEY   = 'k5t6sterc4j91oq';
 const REDIRECT  = 'https://evine33.github.io/';
 const JSON_PATH = '/transactions.json';
@@ -322,6 +369,7 @@ const JS_PATH   = '/transactions.js';
 const IMG_DIR   = '/imagenes';
 
 let dbx = null, txs = [], editingId = null, imgCache = {};
+var selected = {}, expUseSelection = false;
 
 window.addEventListener('load', async function() {
   var hash = new URLSearchParams(window.location.hash.substring(1));
@@ -518,6 +566,7 @@ async function eliminarTx(id) {
   if (!t) return;
   if (!confirm('¿Eliminar "' + t.category + '" del ' + t.date + '?')) return;
   txs = txs.filter(function(tx) { return tx.id !== id; });
+  delete selected[id];
   try { await dbx.filesDeleteV2({ path: IMG_DIR + '/tx-' + id + '.txt' }); delete imgCache[id]; } catch(e) {}
   renderLista();
   updateCatFilter();
@@ -558,13 +607,18 @@ function renderLista() {
   }
   data.forEach(function(t, i) {
     var p    = t.amount >= 0;
+    var isSel = !!selected[t.id];
     var card = document.createElement('div');
-    card.className = 'dbx-card ' + (p ? 'inc' : 'exp');
+    card.id = 'tx-card-' + t.id;
+    card.className = 'dbx-card ' + (p ? 'inc' : 'exp') + (isSel ? ' sel' : '');
     card.style.animationDelay = (i * 0.025) + 's';
     card.innerHTML =
       '<div class="dbx-row">' +
-        '<div><div class="dbx-amount ' + (p?'p':'n') + '">' + (p?'+':'−') + ' ' + fmtN(t.amount) + '</div>' +
-        '<div style="font-size:.7rem;color:var(--txt2);font-family:\'DM Mono\',monospace;margin-top:.15rem;">' + t.date + '</div></div>' +
+        '<div style="display:flex;align-items:flex-start;gap:.55rem;min-width:0;">' +
+          '<button id="tx-chk-' + t.id + '" class="tx-check' + (isSel?' on':'') + '" onclick="toggleSelect(' + t.id + ')" aria-label="Seleccionar"><i class="fa-solid fa-check"></i></button>' +
+          '<div><div class="dbx-amount ' + (p?'p':'n') + '">' + (p?'+':'−') + ' ' + fmtN(t.amount) + '</div>' +
+          '<div style="font-size:.7rem;color:var(--txt2);font-family:\'DM Mono\',monospace;margin-top:.15rem;">' + t.date + '</div></div>' +
+        '</div>' +
         '<div class="dbx-badge"><i class="fa-solid fa-tag" style="margin-right:.3rem;"></i>' + t.category + '</div>' +
       '</div>' +
       (t.description ? '<div class="dbx-desc">' + t.description + '</div>' : '') +
@@ -592,6 +646,50 @@ function renderLista() {
       })(t.id);
     }
   });
+  updateSelBar();
+}
+
+/* ════ SELECCIÓN MÚLTIPLE ════ */
+function toggleSelect(id) {
+  if (selected[id]) delete selected[id]; else selected[id] = true;
+  var card = document.getElementById('tx-card-' + id);
+  var chk  = document.getElementById('tx-chk-' + id);
+  if (card) { if (selected[id]) card.classList.add('sel'); else card.classList.remove('sel'); }
+  if (chk)  { if (selected[id]) chk.classList.add('on');   else chk.classList.remove('on'); }
+  updateSelBar();
+}
+
+function updateSelBar() {
+  var bar = document.getElementById('sel-bar');
+  var sel = txs.filter(function(t) { return selected[t.id]; });
+  if (!sel.length) { bar.classList.remove('show'); return; }
+  var fmt = function(v) { return 'L ' + Number(v).toLocaleString('es-HN', {maximumFractionDigits:0}); };
+  var ing = sel.filter(function(t){return t.amount>0;}).reduce(function(s,t){return s+t.amount;},0);
+  var gas = sel.filter(function(t){return t.amount<0;}).reduce(function(s,t){return s+Math.abs(t.amount);},0);
+  document.getElementById('sel-count').textContent     = sel.length + ' seleccionada' + (sel.length>1?'s':'');
+  document.getElementById('sel-neto').textContent      = 'Neto ' + fmt(ing-gas);
+  document.getElementById('sel-breakdown').textContent = 'Ingresos ' + fmt(ing) + '  ·  Gastos ' + fmt(gas);
+  bar.classList.add('show');
+}
+
+function clearSelection() {
+  selected = {};
+  var checks = document.querySelectorAll('.tx-check.on');
+  for (var i=0;i<checks.length;i++) checks[i].classList.remove('on');
+  var cards = document.querySelectorAll('.dbx-card.sel');
+  for (var j=0;j<cards.length;j++) cards[j].classList.remove('sel');
+  updateSelBar();
+}
+
+function exportSeleccion() {
+  if (!Object.keys(selected).length) {
+    showToast('Nada seleccionado', 'Tocá el cuadro de una o más transacciones.', 'warning');
+    return;
+  }
+  expUseSelection = true;
+  document.getElementById('exp-filters-block').style.display = 'none';
+  updateExpPreview();
+  document.getElementById('overlay-export').classList.add('open');
 }
 
 function updateCatFilter() {
@@ -643,6 +741,10 @@ function showToast(title, msg, type, dur) {
 var REPORTES_DIR = '/reportes';
 
 function getExpData() {
+  if (expUseSelection) {
+    return txs.filter(function(t){ return selected[t.id]; })
+              .sort(function(a,b){ return a.date.localeCompare(b.date); });
+  }
   var from = document.getElementById('exp-from').value;
   var to   = document.getElementById('exp-to').value;
   var cat  = document.getElementById('exp-cat').value;
@@ -657,7 +759,7 @@ function updateExpPreview() {
   var data  = getExpData();
   var total = data.reduce(function(s,t){ return s + t.amount; }, 0);
   document.getElementById('exp-preview-count').textContent =
-    data.length + ' transacciones · L ' + Number(total).toLocaleString('es-HN');
+    (expUseSelection ? 'Seleccionadas: ' : '') + data.length + ' transacciones · L ' + Number(total).toLocaleString('es-HN');
 }
 
 function populateExpCat() {
@@ -671,6 +773,8 @@ function populateExpCat() {
 }
 
 function openExport() {
+  expUseSelection = false;
+  document.getElementById('exp-filters-block').style.display = '';
   populateExpCat();
   updateExpPreview();
   document.getElementById('overlay-export').classList.add('open');
@@ -896,6 +1000,6 @@ function openReportes() {
   document.getElementById('overlay-reportes').classList.add('open');
   cargarReportes();
 }
-</script>
-</body>
+</script> 
+ </body>
 </html>
